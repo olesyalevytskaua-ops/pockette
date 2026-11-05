@@ -215,11 +215,16 @@ function Editor({ card, onSave, onClose }: { card?: Card; onSave: (c: Card) => v
   }
 
   const preview: Card = { id: 'preview', store: store.trim() || t.storeName, label: label.trim(), number: number || '0000 0000', format, color };
+  // Preview and colour sit together above both steps, so the colour can be set however the card is entered.
+  const look = <>
+    <div className="preview" aria-hidden="true"><CardStrip card={preview} /></div>
+    <fieldset className="colour-picker"><legend>{t.cardColour}</legend><div className="swatches">{swatches.map(s => <button type="button" key={s.color} style={cardTone(s.color)} className="swatch" aria-label={s.name} aria-pressed={color.toLowerCase() === s.color.toLowerCase()} onClick={() => setColor(s.color)}>{color.toLowerCase() === s.color.toLowerCase() && <Check size={18} />}</button>)}</div></fieldset>
+  </>;
   return <Modal title={scanning ? t.scanCode : card ? t.editCard : t.addCard} onClose={scanning ? closeScanner : onClose}>
     {scanning ? <React.Suspense fallback={<p role="status">{t.openingScanner}</p>}>
       <CodeScanner onCode={useCode} onBack={enterManually} />
     </React.Suspense> : !showForm ? <>
-      <div className="preview" aria-hidden="true"><CardStrip card={preview} /></div>
+      {look}
       <p className="choose-hint">{t.chooseHint}</p>
       <div className="choose-actions">
         <button ref={scanButton} autoFocus className="primary-button" type="button" onClick={() => setScanning(true)}>
@@ -228,7 +233,7 @@ function Editor({ card, onSave, onClose }: { card?: Card; onSave: (c: Card) => v
         <button className="outline-button" type="button" onClick={enterManually}><Keyboard size={18} aria-hidden="true" />{t.enterManually}</button>
       </div>
     </> : <>
-      <div className="preview" aria-hidden="true"><CardStrip card={preview} /></div>
+      {look}
       <button ref={scanButton} className="outline-button scan-launch" type="button" onClick={() => {
         setScanNotice('');
         setScanning(true);
@@ -250,7 +255,6 @@ function Editor({ card, onSave, onClose }: { card?: Card; onSave: (c: Card) => v
             ? <textarea required value={number} maxLength={CODE_LIMIT} rows={2} onChange={e => { setNumber(e.target.value); setError(''); }} autoCapitalize="off" spellCheck={false} placeholder={t.cardNumberPlaceholder}  />
             : <input required value={number} maxLength={CODE_LIMIT} onChange={e => { setNumber(e.target.value); setError(''); }} autoCapitalize="off" spellCheck={false} placeholder={t.cardNumberPlaceholder}  />}
         </label>
-        <fieldset><legend>{t.cardColour}</legend><div className="swatches">{swatches.map(s => <button type="button" key={s.color} style={cardTone(s.color)} className="swatch" aria-label={s.name} aria-pressed={color.toLowerCase() === s.color.toLowerCase()} onClick={() => setColor(s.color)}>{color.toLowerCase() === s.color.toLowerCase() && <Check size={18} />}</button>)}</div></fieldset>
         {error && <p role="alert" className="error">{error}</p>}
         <PrimaryButton type="submit">{card ? t.saveChanges : t.addToWallet}</PrimaryButton>
       </form>
