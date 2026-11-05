@@ -1,7 +1,7 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import bwipjs from 'bwip-js/browser';
-import { Plus, Search, X, Pencil, Trash2, Download, Upload, Check, WifiOff, ScanLine, ChevronUp, ChevronDown, Pin } from 'lucide-react';
+import { Plus, Search, X, Pencil, Trash2, Download, Upload, Check, WifiOff, ScanLine, Keyboard, ChevronUp, ChevronDown, Pin } from 'lucide-react';
 import '@fontsource/cormorant-garamond/500.css';
 import '@fontsource/cormorant-garamond/600.css';
 import '@fontsource/inter/400.css';
@@ -169,6 +169,8 @@ function Editor({ card, onSave, onClose }: { card?: Card; onSave: (c: Card) => v
   const [color, setColor] = useState(card?.color ?? presets[0].color);
   const [error, setError] = useState('');
   const [scanning, setScanning] = useState(false);
+  // A new card starts on the choice; its fields appear after a scan or on "Enter manually".
+  const [showForm, setShowForm] = useState(!!card);
   const [scanNotice, setScanNotice] = useState('');
   const scanButton = useRef<HTMLButtonElement>(null);
   const storeInput = useRef<HTMLInputElement>(null);
@@ -182,10 +184,16 @@ function Editor({ card, onSave, onClose }: { card?: Card; onSave: (c: Card) => v
     if (returnFocus.current === 'scan') scanButton.current?.focus();
     if (returnFocus.current === 'store') storeInput.current?.focus();
     returnFocus.current = null;
-  }, [scanning]);
+  }, [scanning, showForm]);
 
-  function backToForm() {
+  /** Leave the scanner for the step it was opened from. */
+  function closeScanner() {
     returnFocus.current = 'scan';
+    setScanning(false);
+  }
+  function enterManually() {
+    returnFocus.current = 'store';
+    setShowForm(true);
     setScanning(false);
   }
 
@@ -193,7 +201,8 @@ function Editor({ card, onSave, onClose }: { card?: Card; onSave: (c: Card) => v
     const problem = codeError(code.number, code.format, t);
     if (problem) {
       setError(problem);
-      backToForm();
+      setShowForm(true);
+      closeScanner();
       return;
     }
     setNumber(code.number);
@@ -201,14 +210,24 @@ function Editor({ card, onSave, onClose }: { card?: Card; onSave: (c: Card) => v
     setError('');
     setScanNotice(t.scanned(formats[code.format]));
     returnFocus.current = store.trim() ? 'scan' : 'store';
+    setShowForm(true);
     setScanning(false);
   }
 
   const preview: Card = { id: 'preview', store: store.trim() || t.storeName, label: label.trim(), number: number || '0000 0000', format, color };
-  return <Modal title={scanning ? t.scanCode : card ? t.editCard : t.addCard} onClose={scanning ? backToForm : onClose}>
+  return <Modal title={scanning ? t.scanCode : card ? t.editCard : t.addCard} onClose={scanning ? closeScanner : onClose}>
     {scanning ? <React.Suspense fallback={<p role="status">{t.openingScanner}</p>}>
-      <CodeScanner onCode={useCode} onBack={backToForm} />
-    </React.Suspense> : <>
+      <CodeScanner onCode={useCode} onBack={enterManually} />
+    </React.Suspense> : !showForm ? <>
+      <div className="preview" aria-hidden="true"><CardStrip card={preview} /></div>
+      <p className="choose-hint">{t.chooseHint}</p>
+      <div className="choose-actions">
+        <button ref={scanButton} autoFocus className="primary-button" type="button" onClick={() => setScanning(true)}>
+          <span className="plus-ring" aria-hidden="true"><ScanLine size={14} strokeWidth={1.8} /></span>{t.scanButton}
+        </button>
+        <button className="outline-button" type="button" onClick={enterManually}><Keyboard size={18} aria-hidden="true" />{t.enterManually}</button>
+      </div>
+    </> : <>
       <div className="preview" aria-hidden="true"><CardStrip card={preview} /></div>
       <button ref={scanButton} className="outline-button scan-launch" type="button" onClick={() => {
         setScanNotice('');
@@ -221,7 +240,7 @@ function Editor({ card, onSave, onClose }: { card?: Card; onSave: (c: Card) => v
         if (err) { setError(err); return; }
         onSave({ id: card?.id ?? crypto.randomUUID(), store: store.trim(), label: label.trim(), number, format, color, demo: card?.demo });
       }}>
-        <label>{t.storeName}<input ref={storeInput} autoFocus required maxLength={60} value={store} onChange={e => setStore(e.target.value)} placeholder={t.storePlaceholder} pattern={'.*\\S.*'} /></label>
+        <label>{t.storeName}<input ref={storeInput} autoFocus={!returnFocus.current} required maxLength={60} value={store} onChange={e => setStore(e.target.value)} placeholder={t.storePlaceholder} pattern={'.*\\S.*'} /></label>
         <label>{t.cardName} <span className="small">{t.optional}</span><input maxLength={80} value={label} onChange={e => setLabel(e.target.value)} placeholder={t.cardNamePlaceholder} /></label>
         <label>{t.codeFormat}<select value={format} onChange={e => { setFormat(e.target.value as CodeFormat); setError(''); }}>
           {Object.entries(formats).map(([value, name]) => <option key={value} value={value}>{value === 'qrcode' ? t.qrFormat : t.barcodeFormat(name)}</option>)}

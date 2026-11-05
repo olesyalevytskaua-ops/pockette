@@ -3,6 +3,10 @@ test('wallet CRUD, search, rendering, persistence and list keyboard access',asyn
  await page.goto('/');
  await expect(page.getByRole('button',{name:'Open IKEA, IKEA Family, demo card'})).toBeVisible();
  await page.getByRole('button',{name:'Add a card',exact:true}).click();
+ // A new card opens on the choice: no fields until a scan or manual entry.
+ await expect(page.getByLabel('Store name')).toHaveCount(0);
+ await page.getByRole('button',{name:'Enter manually'}).click();
+ await expect(page.getByLabel('Store name')).toBeFocused();
  await page.getByLabel('Store name').fill('My grocery');
  await page.getByLabel('Card name').fill('Weekly shopping');
  await page.getByLabel('Card number or code').fill('001234567890');
@@ -35,6 +39,7 @@ test('EAN check digits and offline app shell',async({page,context})=>{
  await page.goto('/');
  await page.evaluate(async()=>{await navigator.serviceWorker.ready;});
  await page.getByRole('button',{name:'Add a card',exact:true}).click();
+ await page.getByRole('button',{name:'Enter manually'}).click();
  await page.getByLabel('Store name').fill('EAN test');
  await page.getByLabel('Code format').selectOption('ean13');
  await page.getByLabel('Card number or code').fill('4006381333932');
