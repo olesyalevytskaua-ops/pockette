@@ -256,7 +256,10 @@ function Editor({ card, onSave, onClose }: { card?: Card; onSave: (c: Card) => v
             : <input required value={number} maxLength={CODE_LIMIT} onChange={e => { setNumber(e.target.value); setError(''); }} autoCapitalize="off" spellCheck={false} placeholder={t.cardNumberPlaceholder}  />}
         </label>
         {error && <p role="alert" className="error">{error}</p>}
-        <PrimaryButton type="submit">{card ? t.saveChanges : t.addToWallet}</PrimaryButton>
+        <div className="form-actions">
+          <button type="button" className="outline-button" onClick={onClose}>{t.cancel}</button>
+          <PrimaryButton type="submit">{card ? t.saveChanges : t.addToWallet}</PrimaryButton>
+        </div>
       </form>
     </>}
   </Modal>;

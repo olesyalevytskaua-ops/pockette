@@ -268,6 +268,10 @@ form textarea { resize: vertical; }
 /* Own chevron, inset to the field's 16px padding instead of the native arrow at the edge. */
 form select { appearance: none; -webkit-appearance: none; padding-right: 44px; background: var(--bg) var(--select-chevron) no-repeat right 16px center / 16px 16px; cursor: pointer; }
 form .primary-button { margin-top: 22px; }
+/* Cancel takes only its label's width; the primary action fills the rest of the row. */
+.form-actions { display: flex; gap: 12px; margin-top: 22px; }
+.form-actions .primary-button { flex: 1; min-width: 0; margin-top: 0; }
+.form-actions .outline-button { height: 54px; padding: 0 20px; border-radius: var(--r-pill); flex-shrink: 0; }
 fieldset { border: 0; margin: 18px 0 0; padding: 0; min-width: 0; }
 legend { font-size: 13px; font-weight: 600; margin-bottom: 10px; padding: 0; }
 .swatches { display: flex; flex-wrap: wrap; gap: 12px; }
