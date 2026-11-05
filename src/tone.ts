@@ -1,6 +1,6 @@
 import type React from 'react';
 
-/** The five store-card presets from Design System v2. Cards keep a single hex
+/** The store-card presets: Design System v2's five, plus Purple. Cards keep a single hex
  *  `color`; a preset is matched by that hex, any other hex gets a derived tone. */
 export const presets = [
   { name: 'Bordeaux', color: '#762D46', from: '#8A3A55', to: '#4E1D2E', ink: '#FFFFFF', label: 'rgba(255,255,255,.82)' },
@@ -9,6 +9,8 @@ export const presets = [
   { name: 'Teal', color: '#1F5F5B', from: '#2C7A73', to: '#143F3C', ink: '#FFFFFF', label: '#FFFFFF' },
   { name: 'Gold', color: '#E9CD96', from: '#F5E3C0', to: '#DDB878', ink: '#3A2810', label: '#5A3F18' },
   { name: 'Espresso', color: '#3A2A25', from: '#4E3A33', to: '#241A17', ink: '#F6EEE6', label: '#D9C29A' },
+  // Purple sits between Bordeaux and Navy; its lightest end keeps .82 white above 4.5:1.
+  { name: 'Purple', color: '#553A73', from: '#6E4A8E', to: '#32214A', ink: '#FFFFFF', label: 'rgba(255,255,255,.82)' },
 ] as const;
 
 type Rgb = [number, number, number];
@@ -38,7 +40,8 @@ function derive(color: string) {
 export function cardTone(color: string): React.CSSProperties {
   const preset = presets.find(p => p.color.toLowerCase() === color.toLowerCase());
   const t = preset ?? derive(color);
-  const light = contrast('#FFFFFF', t.ink) < 4.5;
+  // A light card is one whose ink is dark, i.e. ink that holds against white.
+  const light = contrast('#FFFFFF', t.ink) >= 4.5;
   return {
     '--card-from': t.from, '--card-mid': preset?.color ?? color, '--card-to': t.to,
     '--card-ink': t.ink, '--card-label': t.label,

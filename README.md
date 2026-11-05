@@ -37,7 +37,7 @@ The suite covers card CRUD, search, stack-card hit areas, Code 128 / QR / EAN-13
 Design System v2: Maison layout with Cellar Noir cards.
 
 - `src/style.css`: light and dark tokens, then the components (CardStrip, CardTile, AddCardTile, LayoutSwitch, PrimaryButton, SearchField, chips, TabBar, sheets, toast).
-- `src/tone.ts`: the five card presets (Bordeaux, Navy, Teal, Gold, Espresso) and the gradient derived for any other card colour, with text chosen for ≥ 4.5:1 contrast.
+- `src/tone.ts`: the six card presets (Bordeaux, Navy, Teal, Gold, Espresso, Purple) and the gradient derived for any other card colour, with text chosen for ≥ 4.5:1 contrast.
 - Type: Cormorant Garamond (display) and Inter (UI), self-hosted through `@fontsource`.
 
 ## Project files
