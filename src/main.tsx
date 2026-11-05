@@ -224,7 +224,7 @@ function Editor({ card, onSave, onClose }: { card?: Card; onSave: (c: Card) => v
         <label>{t.storeName}<input ref={storeInput} autoFocus required maxLength={60} value={store} onChange={e => setStore(e.target.value)} placeholder={t.storePlaceholder} pattern={'.*\\S.*'} /></label>
         <label>{t.cardName} <span className="small">{t.optional}</span><input maxLength={80} value={label} onChange={e => setLabel(e.target.value)} placeholder={t.cardNamePlaceholder} /></label>
         <label>{t.codeFormat}<select value={format} onChange={e => { setFormat(e.target.value as CodeFormat); setError(''); }}>
-          {Object.entries(formats).map(([value, name]) => <option key={value} value={value}>{value === 'qrcode' ? name : t.barcodeFormat(name)}</option>)}
+          {Object.entries(formats).map(([value, name]) => <option key={value} value={value}>{value === 'qrcode' ? t.qrFormat : t.barcodeFormat(name)}</option>)}
         </select></label>
         <label>{t.cardNumber}
           {format === 'qrcode'

@@ -28,6 +28,8 @@
   /* The board's #A8937A measured 2.9:1 on --bg; this holds the 3:1 non-text minimum. */
   --add-tile-edge: #978066;
   --add-tile-ink: #48232F;
+  /* The select chevron, drawn in --text-2: a data URI cannot read a custom property. */
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23575157' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   --shadow-stack: rgba(37, 35, 38, .14);
   --shadow-tile: 0 10px 22px rgba(72, 35, 47, .14);
   --shadow-cta: 0 8px 20px rgba(72, 35, 47, .18);
@@ -73,6 +75,7 @@
   --add-tile-bg: #1C1116;
   --add-tile-edge: rgba(217, 194, 154, .55);
   --add-tile-ink: #F3EAE3;
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23B9A9A6' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   --shadow-stack: rgba(0, 0, 0, .45);
   --shadow-tile: 0 12px 26px rgba(0, 0, 0, .45);
   --shadow-cta: 0 8px 22px rgba(0, 0, 0, .45);
@@ -262,6 +265,8 @@ form :is(input, select, textarea) { display: block; width: 100%; min-width: 0; m
 form :is(input, textarea)::placeholder { color: var(--placeholder); opacity: 1; }
 form :is(input, select, textarea):focus-visible { outline: 2px solid var(--accent); outline-offset: 0; border-color: transparent; }
 form textarea { resize: vertical; }
+/* Own chevron, inset to the field's 16px padding instead of the native arrow at the edge. */
+form select { appearance: none; -webkit-appearance: none; padding-right: 44px; background: var(--bg) var(--select-chevron) no-repeat right 16px center / 16px 16px; cursor: pointer; }
 form .primary-button { margin-top: 22px; }
 fieldset { border: 0; margin: 18px 0 0; padding: 0; min-width: 0; }
 legend { font-size: 13px; font-weight: 600; margin-bottom: 10px; padding: 0; }
