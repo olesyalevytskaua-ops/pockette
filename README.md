@@ -30,6 +30,7 @@ The suite covers card CRUD, search, stack-card hit areas, Code 128 / QR / EAN-13
 - **Coupons:** save, copy, edit and remove promo codes with optional offer and expiry; codes expiring within a week are flagged.
 - **Settings:** Appearance (System / Light / Dark), default card layout, JSON backup and import (merges without duplicates, up to 1,000 items / 1 MB).
 - **Languages:** English and Ukrainian, chosen in Settings (defaults to the browser language). Strings live in `src/i18n.ts`.
+- **Splash:** shown once per launch, about 2.4s, skipped by any tap or key; light and dark (`src/Splash.tsx`).
 - **PWA:** installable; the app shell, fonts and code renderer are precached after the first visit.
 
 ## Design system

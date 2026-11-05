@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+test.beforeEach(({ page }) => page.addInitScript(() => sessionStorage.setItem('pockette.splash', 'shown')));
 
 test('theme and promos survive reload alongside existing cards', async ({ page, context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);

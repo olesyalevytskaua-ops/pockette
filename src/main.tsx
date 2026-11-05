@@ -1,4 +1,4 @@
-import React, { useEffect, useId, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import bwipjs from 'bwip-js/browser';
 import { Plus, Search, X, Pencil, Trash2, Download, Upload, Check, WifiOff, ScanLine, Keyboard, ChevronUp, ChevronDown, Pin } from 'lucide-react';
@@ -12,6 +12,7 @@ import { isPromo, PromoForm, PromoTicket, type Promo } from './promos';
 import { CODE_LIMIT, formats, isCodeFormat, validateCode, type CodeFormat, type ScannedCode } from './code-formats';
 import { cardTone, presets } from './tone';
 import { useCardDrag } from './useCardDrag';
+import { Splash, shouldShowSplash } from './Splash';
 import { dictionaries, I18n, LANG_KEY, useT, type Lang, type Strings } from './i18n';
 
 const CodeScanner = React.lazy(() => import('./CodeScanner'));
@@ -279,6 +280,8 @@ function App() {
   const t = dictionaries[lang];
   const [appearance, setAppearance] = useState<Appearance>(() => readPref(THEME_KEY, ['light', 'dark'] as Appearance[], 'system'));
   const [layout, setLayout] = useState<Layout>(() => readPref(LAYOUT_KEY, ['stack', 'tile'] as const, 'stack'));
+  const [splash, setSplash] = useState(shouldShowSplash);
+  const hideSplash = useCallback(() => setSplash(false), []);
   const [tab, setTab] = useState<Tab>('cards');
   const [query, setQuery] = useState('');
   const [hint, setHint] = useState(false);
@@ -561,6 +564,7 @@ function App() {
           <button className="text-button" onClick={() => setDeleting(true)}><Trash2 size={17} aria-hidden="true" />{t.delete}</button>
         </div>
       </Modal>)}
+    {splash && <Splash onDone={hideSplash} />}
   </I18n.Provider>;
 }
 

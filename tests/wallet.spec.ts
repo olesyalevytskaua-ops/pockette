@@ -1,4 +1,5 @@
 import {test,expect} from '@playwright/test';
+test.beforeEach(({ page }) => page.addInitScript(() => sessionStorage.setItem('pockette.splash', 'shown')));
 test('wallet CRUD, search, rendering, persistence and list keyboard access',async({page})=>{
  await page.goto('/');
  await expect(page.getByRole('button',{name:'Open IKEA, IKEA Family, demo card'})).toBeVisible();

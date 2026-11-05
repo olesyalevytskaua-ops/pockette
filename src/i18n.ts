@@ -12,6 +12,7 @@ function ukPlural(n: number, one: string, few: string, many: string) {
 const en = {
   locale: 'en',
   skip: 'Skip to content',
+  splashTagline: 'Cards and promo codes, ready offline',
   home: 'Pockette home',
   close: 'Close dialog',
   optional: '(optional)',
@@ -178,6 +179,7 @@ export type Strings = typeof en;
 const uk: Strings = {
   locale: 'uk',
   skip: 'Перейти до вмісту',
+  splashTagline: 'Картки й промокоди, доступні офлайн',
   home: 'Pockette, головна',
   close: 'Закрити',
   optional: '(необов’язково)',

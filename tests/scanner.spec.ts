@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+test.beforeEach(({ page }) => page.addInitScript(() => sessionStorage.setItem('pockette.splash', 'shown')));
 import { toBuffer } from 'bwip-js/node';
 
 async function openScanner(page: Page) {

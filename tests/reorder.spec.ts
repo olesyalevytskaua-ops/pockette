@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+test.beforeEach(({ page }) => page.addInitScript(() => sessionStorage.setItem('pockette.splash', 'shown')));
 
 const names = (page: Page) => page.locator('[data-drag-id] .card-name').allTextContents();
 
