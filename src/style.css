@@ -118,6 +118,11 @@ svg { flex-shrink: 0; }
 .search-field input::-webkit-search-cancel-button { display: none; }
 .search-field .icon-button { color: var(--text-2); }
 
+/* One quiet line where the reorder control used to be: dragging needs no mode. */
+/* The list owns its gap below the search field, so it holds when the hint hides during a search;
+   the hint pulls the list back to a 10px gap under itself. */
+.drag-hint { margin: 18px 0 -6px; font-size: 13px; color: var(--text-2); }
+.drag-hint + .hint { margin-top: 16px; }
 .section-row { display: flex; align-items: center; justify-content: space-between; margin: 18px 0 10px; }
 .section-label { font-size: 13px; font-weight: 600; }
 .text-button { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 4px; color: var(--accent); font-size: 13px; font-weight: 600; }
@@ -145,12 +150,19 @@ svg { flex-shrink: 0; }
 .store-card:hover { transform: translateY(-2px); }
 .store-card:active { transform: translateY(-2px); filter: brightness(.96); }
 .store-card:focus-visible { z-index: 5; }
+/* Dragging: no text selection or iOS callout on a held card; the lifted one rides above the rest. */
+.card-stack .store-card, .card-grid .store-card { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.card-stack li.lifted, .card-grid li.lifted { z-index: 20; }
+.store-card.dragging { cursor: grabbing; box-shadow: 0 18px 40px var(--shadow-stack); }
+.move-buttons { display: inline-flex; margin-left: auto; }
 .card-name { font: 600 26px/1 var(--display); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 100%; }
 .card-category { font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--card-label); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 100%; }
 .card-id { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 
 /* CardStrip (stack view): 180px cards, 60px of each showing. */
-.card-stack, .card-grid, .reorder-list, .coupon-list { list-style: none; margin: 0; padding: 0; }
+.card-stack, .card-grid, .coupon-list { list-style: none; margin: 0; padding: 0; }
+.card-stack, .card-grid { margin-top: 16px; }
+.hint + .card-stack, .hint + .card-grid { margin-top: 0; }
 .card-stack { display: flex; flex-direction: column; }
 .card-stack li { position: relative; }
 .card-stack li + li { margin-top: -120px; }
@@ -188,13 +200,6 @@ svg { flex-shrink: 0; }
 /* PinnedChip, reused as the coupon "Expiring soon" chip. */
 .chip { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 13px; border: 1px solid var(--accent); color: var(--accent); font-size: 10px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; white-space: nowrap; }
 
-/* Reorder mode: compact rows with Move up / Move down, the same in both views. */
-.reorder-list { display: grid; gap: 8px; }
-.reorder-row { display: flex; align-items: center; gap: 8px; padding: 0 6px 0 0; border-radius: var(--r-field); overflow: hidden; background: var(--surface); border: 1px solid var(--border); }
-.reorder-swatch { width: 10px; align-self: stretch; background: linear-gradient(180deg, var(--card-from), var(--card-to)); }
-.reorder-row .card-id { flex: 1; padding: 10px 6px; }
-.reorder-row .card-name { font-size: 20px; }
-.reorder-row .card-category { color: var(--text-2); font-size: 10px; }
 
 .hint { display: flex; align-items: center; gap: 10px; margin: 0 0 12px; padding: 6px 6px 6px 14px; border-radius: var(--r-field); border: 1px solid var(--champagne); background: var(--surface); font-size: 14px; }
 .hint p { flex: 1; }
@@ -286,6 +291,8 @@ legend { font-size: 13px; font-weight: 600; margin-bottom: 10px; padding: 0; }
 .choose-actions .outline-button { height: 54px; border-radius: var(--r-pill); }
 .actions { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 20px; }
 .actions > :last-child:not(:first-child) { margin-left: auto; }
+/* In the card sheet the move pair takes the push to the right; Delete follows it. */
+.actions > .move-buttons + :last-child { margin-left: 0; }
 .actions .primary-button { width: auto; padding: 0 24px; }
 
 /* Barcode viewer: always black on white with a wide quiet zone. */

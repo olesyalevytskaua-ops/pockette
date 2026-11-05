@@ -11,6 +11,7 @@ import './style.css';
 import { isPromo, PromoForm, PromoTicket, type Promo } from './promos';
 import { CODE_LIMIT, formats, isCodeFormat, validateCode, type CodeFormat, type ScannedCode } from './code-formats';
 import { cardTone, presets } from './tone';
+import { useCardDrag } from './useCardDrag';
 import { dictionaries, I18n, LANG_KEY, useT, type Lang, type Strings } from './i18n';
 
 const CodeScanner = React.lazy(() => import('./CodeScanner'));
@@ -112,11 +113,15 @@ const SettingsIcon = () => <svg width="22" height="22" viewBox="0 0 24 24" fill=
 const cardLabel = (t: Strings, card: Card) => t.openCard(card.store, card.label, !!card.demo);
 
 /** CardStrip: a full-size card in the stack. The front card adds the code row. */
-function CardStrip({ card, front, onClick }: { card: Card; front?: boolean; onClick?: () => void }) {
+type DragProps = React.HTMLAttributes<HTMLElement> & { dragging?: boolean };
+
+/** CardStrip props: `drag` carries the reorder handlers and offset when the card is in a list. */
+function CardStrip({ card, front, onClick, drag }: { card: Card; front?: boolean; onClick?: () => void; drag?: DragProps }) {
   // Without onClick it is a picture of a card (the editor's live preview), not a control.
   const t = useT();
   const Tag = onClick ? 'button' : 'div';
-  return <Tag {...(onClick ? { type: 'button' as const, onClick, 'aria-label': cardLabel(t, card) } : {})} className={`store-card card-strip${front ? ' front' : ''}`} style={cardTone(card.color)}>
+  const { dragging, style, ...handlers } = drag ?? {};
+  return <Tag {...(onClick ? { type: 'button' as const, onClick, 'aria-label': cardLabel(t, card), 'aria-keyshortcuts': 'Alt+ArrowUp Alt+ArrowDown' } : {})} {...handlers} className={`store-card card-strip${front ? ' front' : ''}${dragging ? ' dragging' : ''}`} style={{ ...cardTone(card.color), ...style }}>
     <span className="card-id"><span className="card-name">{card.store}</span>{card.label && <span className="card-category">{card.label}</span>}</span>
     {front && <>
       <span className="card-rule" aria-hidden="true" />
@@ -126,9 +131,10 @@ function CardStrip({ card, front, onClick }: { card: Card; front?: boolean; onCl
 }
 
 /** CardTile: the same card surface at grid size. */
-function CardTile({ card, onClick }: { card: Card; onClick: () => void }) {
+function CardTile({ card, onClick, drag }: { card: Card; onClick: () => void; drag?: DragProps }) {
   const t = useT();
-  return <button type="button" className="store-card card-tile" style={cardTone(card.color)} onClick={onClick} aria-label={cardLabel(t, card)}>
+  const { dragging, style, ...handlers } = drag ?? {};
+  return <button type="button" {...handlers} className={`store-card card-tile${dragging ? ' dragging' : ''}`} style={{ ...cardTone(card.color), ...style }} onClick={onClick} aria-label={cardLabel(t, card)} aria-keyshortcuts="Alt+ArrowLeft Alt+ArrowRight">
     <span className="card-glyph"><BarcodeGlyph size={18} /></span>
     <span className="card-id"><span className="card-name">{card.store}</span>{card.label && <span className="card-category">{card.label}</span>}</span>
   </button>;
@@ -275,7 +281,6 @@ function App() {
   const [layout, setLayout] = useState<Layout>(() => readPref(LAYOUT_KEY, ['stack', 'tile'] as const, 'stack'));
   const [tab, setTab] = useState<Tab>('cards');
   const [query, setQuery] = useState('');
-  const [reordering, setReordering] = useState(false);
   const [hint, setHint] = useState(false);
   const [selected, setSelected] = useState<Card | null>(null);
   const [editor, setEditor] = useState<{ card?: Card } | null>(null);
@@ -333,7 +338,6 @@ function App() {
   function go(next: Tab) {
     setTab(next);
     setQuery('');
-    setReordering(false);
     window.scrollTo(0, 0);
   }
 
@@ -354,10 +358,19 @@ function App() {
   function move(id: string, by: -1 | 1) {
     const from = cards.findIndex(c => c.id === id);
     const to = from + by;
-    if (from < 0 || to < 0 || to >= cards.length) return;
+    if (from < 0 || to < 0 || to >= cards.length) return false;
     const next = [...cards];
     [next[from], next[to]] = [next[to], next[from]];
     commit({ ...data, cards: next }, (by < 0 ? t.movedUp : t.movedDown)(cards[from].store));
+    return true;
+  }
+  /** Alt+arrow moves the focused card; React re-sorts the nodes, so focus is put back on it. */
+  function moveByKey(e: React.KeyboardEvent, id: string) {
+    if (!e.altKey || normalized) return;
+    const by = e.key === 'ArrowUp' || e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowDown' || e.key === 'ArrowRight' ? 1 : 0;
+    if (!by) return;
+    e.preventDefault();
+    if (move(id, by)) requestAnimationFrame(() => document.querySelector<HTMLElement>(`[data-drag-id="${CSS.escape(id)}"] button`)?.focus());
   }
 
   function exportWallet() {
@@ -400,7 +413,9 @@ function App() {
   const normalized = query.toLowerCase().trim();
   const filteredCards = cards.filter(c => `${c.store} ${c.label}`.toLowerCase().includes(normalized));
   const filteredPromos = promos.filter(p => `${p.store} ${p.code} ${p.offer}`.toLowerCase().includes(normalized));
-  const open = (card: Card) => { setSelected(card); setDeleting(false); };
+  const drag = useCardDrag(filteredCards, !normalized, next => commit({ ...data, cards: next }, t.orderSaved));
+  const open = (card: Card) => { if (drag.swallowClick()) return; setSelected(card); setDeleting(false); };
+  const dragProps = (card: Card): DragProps => ({ ...drag.bind(card.id), onKeyDown: e => moveByKey(e, card.id), style: drag.dragStyle(card.id), dragging: drag.draggingId === card.id });
   const addCard = () => setEditor({});
   const addPromo = () => setPromoEditor({});
 
@@ -421,21 +436,13 @@ function App() {
       <button className="text-button" onClick={() => setQuery('')}>{t.resetSearch}</button>
       <PrimaryButton onClick={addCard}>{t.addCard}</PrimaryButton>
     </div>;
-    if (reordering) return <ul className="reorder-list" aria-label={t.reorderCards}>
-      {cards.map((card, i) => <li key={card.id} className="reorder-row" style={cardTone(card.color)}>
-        <span className="reorder-swatch" aria-hidden="true" />
-        <span className="card-id"><span className="card-name">{card.store}</span>{card.label && <span className="card-category">{card.label}</span>}</span>
-        <button className="icon-button" aria-label={t.moveUp(card.store)} disabled={i === 0} onClick={() => move(card.id, -1)}><ChevronUp size={20} /></button>
-        <button className="icon-button" aria-label={t.moveDown(card.store)} disabled={i === cards.length - 1} onClick={() => move(card.id, 1)}><ChevronDown size={20} /></button>
-      </li>)}
-    </ul>;
     return layout === 'stack' ? <>
-      <ul className="card-stack">
-        {filteredCards.map((card, i) => <li key={card.id}><CardStrip card={card} front={i === filteredCards.length - 1} onClick={() => open(card)} /></li>)}
+      <ul className="card-stack" ref={drag.listRef}>
+        {drag.order.map((card, i) => <li key={card.id} data-drag-id={card.id} className={drag.draggingId === card.id ? 'lifted' : undefined}><CardStrip card={card} front={i === drag.order.length - 1} onClick={() => open(card)} drag={dragProps(card)} /></li>)}
       </ul>
       <PrimaryButton className="home-add" onClick={addCard}>{t.addCard}</PrimaryButton>
-    </> : <ul className="card-grid">
-      {filteredCards.map(card => <li key={card.id}><CardTile card={card} onClick={() => open(card)} /></li>)}
+    </> : <ul className="card-grid" ref={drag.listRef}>
+      {drag.order.map(card => <li key={card.id} data-drag-id={card.id} className={drag.draggingId === card.id ? 'lifted' : undefined}><CardTile card={card} onClick={() => open(card)} drag={dragProps(card)} /></li>)}
       <li><button className="add-tile" onClick={addCard}><span className="plus-disc" aria-hidden="true"><Plus size={16} strokeWidth={1.8} /></span>{t.addCard}</button></li>
     </ul>;
   }
@@ -445,21 +452,18 @@ function App() {
     <div className="app">
       <header className="header">
         <a className="wordmark" href="/" aria-label={t.home}>Pockette<span aria-hidden="true">.</span></a>
-        {tab === 'cards' && !reordering && <LayoutSwitch value={layout} onChange={chooseLayout} />}
+        {tab === 'cards' && <LayoutSwitch value={layout} onChange={chooseLayout} />}
       </header>
       <div className="hairline" aria-hidden="true" />
       <main id="screen">
         {tab === 'cards' && <>
           <p className="eyebrow">{t.cardCount(cards.length)} · {t.readyOffline}</p>
           <h1 className="screen-title">{t.yourCards}</h1>
-          {cards.length > 0 && !reordering && <SearchField label={t.searchCards} value={query} onChange={setQuery} />}
+          {cards.length > 0 && <SearchField label={t.searchCards} value={query} onChange={setQuery} />}
           {banners}
           <p className="sr-only" role="status">{t.cardsFound(filteredCards.length)}</p>
-          {cards.length > 1 && !normalized && <div className="section-row">
-            <h2 className="section-label">{reordering ? t.moveCards : t.inYourOrder}</h2>
-            <button className="text-button" aria-pressed={reordering} onClick={() => setReordering(!reordering)}>{reordering ? t.done : t.reorder}</button>
-          </div>}
-          {hint && layout === 'stack' && !reordering && <div className="hint" role="status">
+          {cards.length > 1 && !normalized && <p className="drag-hint">{t.dragHint}</p>}
+          {hint && layout === 'stack' && <div className="hint" role="status">
             <p>{t.gridHint}</p>
             <button className="text-button" onClick={() => chooseLayout('tile')}>{t.useGrid}</button>
             <button className="icon-button" aria-label={t.dismissTip} onClick={dismissHint}><X size={16} /></button>
@@ -550,6 +554,10 @@ function App() {
         <Code card={selected} />
         <div className="actions">
           <button className="outline-button" onClick={() => { setEditor({ card: selected }); setSelected(null); }}><Pencil size={17} aria-hidden="true" />{t.editCard}</button>
+          {cards.length > 1 && <span className="move-buttons">
+            <button className="icon-button" aria-label={t.moveUp(selected.store)} disabled={cards[0]?.id === selected.id} onClick={() => move(selected.id, -1)}><ChevronUp size={20} /></button>
+            <button className="icon-button" aria-label={t.moveDown(selected.store)} disabled={cards.at(-1)?.id === selected.id} onClick={() => move(selected.id, 1)}><ChevronDown size={20} /></button>
+          </span>}
           <button className="text-button" onClick={() => setDeleting(true)}><Trash2 size={17} aria-hidden="true" />{t.delete}</button>
         </div>
       </Modal>)}
