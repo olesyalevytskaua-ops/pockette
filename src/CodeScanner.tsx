@@ -5,6 +5,7 @@ import {
   HybridBinarizer, MultiFormatReader, NotFoundException,
 } from '@zxing/library';
 import { formats, validateCode, type CodeFormat, type ScannedCode } from './code-formats';
+import { useT } from './i18n';
 
 const supported = new Map<BarcodeFormat, CodeFormat>([
   [BarcodeFormat.CODE_128, 'code128'],
@@ -58,6 +59,7 @@ function drawFrame(canvas: HTMLCanvasElement, image: CanvasImageSource, width: n
 }
 
 export default function CodeScanner({ onCode, onBack }: { onCode: (code: ScannedCode) => void; onBack: () => void }) {
+  const t = useT();
   const [mode, setMode] = useState<'idle' | 'starting' | 'camera' | 'photo'>('idle');
   const [message, setMessage] = useState('');
   const photoInput = useRef<HTMLInputElement>(null);
@@ -86,10 +88,10 @@ export default function CodeScanner({ onCode, onBack }: { onCode: (code: Scanned
 
   function finish(code: ScannedCode) {
     stop();
-    const problem = validateCode(code.number, code.format);
+    const problem = validateCode(code.number, code.format, t);
     if (problem) {
       setMode('idle');
-      setMessage(`${formats[code.format]} detected. ${problem}`);
+      setMessage(`${t.detected(formats[code.format])} ${problem}`);
       return;
     }
     onCode(code);
@@ -98,7 +100,7 @@ export default function CodeScanner({ onCode, onBack }: { onCode: (code: Scanned
   async function startCamera() {
     setMessage('');
     if (!navigator.mediaDevices?.getUserMedia) {
-      setMessage('Camera access is unavailable here. Open Pockette on HTTPS or localhost, or choose a photo.');
+      setMessage(t.cameraUnavailable);
       return;
     }
     stop();
@@ -133,14 +135,14 @@ export default function CodeScanner({ onCode, onBack }: { onCode: (code: Scanned
         } catch {
           stop();
           setMode('idle');
-          setMessage('The camera preview could not be scanned. Try again or choose a photo.');
+          setMessage(t.previewUnreadable);
         }
       };
       stream.getVideoTracks().forEach(track => track.addEventListener('ended', () => {
         if (session.current.id !== id) return;
         stop();
         setMode('idle');
-        setMessage('The camera stopped. Try again or choose a photo.');
+        setMessage(t.cameraStopped);
       }, { once: true }));
       tick();
     } catch (error) {
@@ -148,8 +150,8 @@ export default function CodeScanner({ onCode, onBack }: { onCode: (code: Scanned
       stop();
       setMode('idle');
       setMessage(error instanceof DOMException && error.name === 'NotAllowedError'
-        ? 'Camera access was blocked. Allow it in browser settings, or choose a photo.'
-        : 'Could not start the camera. Try again or choose a photo.');
+        ? t.cameraBlocked
+        : t.cameraFailed);
     }
   }
 
@@ -158,7 +160,7 @@ export default function CodeScanner({ onCode, onBack }: { onCode: (code: Scanned
     setMessage('');
     if (file.size > 25 * 1024 * 1024) {
       setMode('idle');
-      setMessage('Choose a photo smaller than 25 MB.');
+      setMessage(t.photoTooLarge);
       return;
     }
     const id = session.current.id;
@@ -177,11 +179,11 @@ export default function CodeScanner({ onCode, onBack }: { onCode: (code: Scanned
         if (result) { finish(result); return; }
       }
       setMode('idle');
-      setMessage('No supported code found. Try a sharper photo cropped around the whole barcode or QR code, with some space around the edges.');
+      setMessage(t.noCodeFound);
     } catch {
       if (session.current.id !== id) return;
       setMode('idle');
-      setMessage('This image could not be read. Try a JPG, PNG or a screenshot.');
+      setMessage(t.imageUnreadable);
     } finally {
       URL.revokeObjectURL(url);
     }
@@ -189,32 +191,32 @@ export default function CodeScanner({ onCode, onBack }: { onCode: (code: Scanned
 
   const cameraActive = mode === 'starting' || mode === 'camera';
 
-  return <section className="scanner" aria-label="Scan a loyalty card">
-    <p>Point your camera at a code, or choose a photo or screenshot from your device.</p>
+  return <section className="scanner" aria-label={t.scanRegion}>
+    <p>{t.scanIntro}</p>
     <div className="scan-preview" hidden={mode !== 'camera'}>
-      <video ref={video} muted playsInline aria-label="Live camera preview" />
+      <video ref={video} muted playsInline aria-label={t.livePreview} />
       <div className="scan-guide" aria-hidden="true"><ScanLine size={44} /></div>
     </div>
     <div className="scan-actions">
       <button className="primary-button" type="button" disabled={mode === 'photo'} onClick={() => {
         if (cameraActive) { stop(); setMode('idle'); }
         else void startCamera();
-      }}><Camera size={18} aria-hidden="true" />{cameraActive ? 'Stop camera' : 'Use camera'}</button>
+      }}><Camera size={18} aria-hidden="true" />{cameraActive ? t.stopCamera : t.useCamera}</button>
       <button className="outline-button" type="button" disabled={mode === 'photo'} onClick={() => {
         if (cameraActive) { stop(); setMode('idle'); }
         photoInput.current?.click();
-      }}><ImagePlus size={18} aria-hidden="true" />Choose a photo</button>
-      <input ref={photoInput} hidden type="file" accept="image/*" aria-label="Photo with a barcode or QR code" onChange={e => {
+      }}><ImagePlus size={18} aria-hidden="true" />{t.choosePhoto}</button>
+      <input ref={photoInput} hidden type="file" accept="image/*" aria-label={t.photoInput} onChange={e => {
         const file = e.currentTarget.files?.[0];
         e.currentTarget.value = '';
         if (file) void scanPhoto(file);
       }} />
     </div>
-    <p role="status" className="scan-status">{mode === 'starting' ? 'Waiting for camera access…'
-      : mode === 'camera' ? 'Hold the entire code in view and keep the camera steady.'
-      : mode === 'photo' ? 'Reading photo…' : ''}</p>
+    <p role="status" className="scan-status">{mode === 'starting' ? t.waitingCamera
+      : mode === 'camera' ? t.holdSteady
+      : mode === 'photo' ? t.readingPhoto : ''}</p>
     {message && <p role="alert" className="error">{message}</p>}
-    <p className="small">Photos and camera frames stay on this device.</p>
-    <button className="text-button scan-back" type="button" onClick={onBack}>Back to manual entry</button>
+    <p className="small">{t.photosStay}</p>
+    <button className="text-button scan-back" type="button" onClick={onBack}>{t.backToManual}</button>
   </section>;
 }

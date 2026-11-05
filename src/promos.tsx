@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Check, Copy, Pencil, Plus, Trash2 } from 'lucide-react';
+import { useT } from './i18n';
 
 export type Promo = { id: string; store: string; code: string; offer: string; expires: string };
 
@@ -22,13 +23,14 @@ function isExpiry(value: string) {
 export function PromoForm({ promo, onSave, onRemove }: {
   promo?: Promo; onSave: (promo: Promo) => void; onRemove: () => void;
 }) {
+  const t = useT();
   const [removing, setRemoving] = useState(false);
   const [error, setError] = useState('');
   if (promo && removing) return <>
-    <p>Remove the code for {promo.store}?</p>
+    <p>{t.removeCodeFor(promo.store)}</p>
     <div className="actions">
-      <button className="outline-button" onClick={() => setRemoving(false)}>Cancel</button>
-      <button className="outline-button danger-button" onClick={onRemove}><Trash2 size={16} aria-hidden="true" />Remove promo</button>
+      <button className="outline-button" onClick={() => setRemoving(false)}>{t.cancel}</button>
+      <button className="outline-button danger-button" onClick={onRemove}><Trash2 size={16} aria-hidden="true" />{t.removePromo}</button>
     </div>
   </>;
   return <form onSubmit={e => {
@@ -41,45 +43,46 @@ export function PromoForm({ promo, onSave, onRemove }: {
       offer: String(fields.get('offer')).trim(),
       expires: String(fields.get('expires')),
     };
-    if (!isPromo(next)) { setError('Check the store name, code and expiry.'); return; }
+    if (!isPromo(next)) { setError(t.checkPromo); return; }
     onSave(next);
   }}>
-    <label>Store name<input name="store" autoFocus required maxLength={60} defaultValue={promo?.store} placeholder="e.g. Sephora" /></label>
-    <label>Promo code<input name="code" required maxLength={100} defaultValue={promo?.code} placeholder="e.g. WELCOME15" autoCapitalize="off" spellCheck={false} /></label>
-    <label>Offer <span className="small">(optional)</span><input name="offer" maxLength={100} defaultValue={promo?.offer} placeholder="e.g. 15% off" /></label>
-    <label>Expiry <span className="small">(optional)</span><input name="expires" type="date" max="9999-12-31" defaultValue={promo?.expires} /></label>
+    <label>{t.storeName}<input name="store" autoFocus required maxLength={60} defaultValue={promo?.store} placeholder={t.promoStorePlaceholder} /></label>
+    <label>{t.promoCode}<input name="code" required maxLength={100} defaultValue={promo?.code} placeholder={t.promoCodePlaceholder} autoCapitalize="off" spellCheck={false} /></label>
+    <label>{t.offer} <span className="small">{t.optional}</span><input name="offer" maxLength={100} defaultValue={promo?.offer} placeholder={t.offerPlaceholder} /></label>
+    <label>{t.expiry} <span className="small">{t.optional}</span><input name="expires" type="date" max="9999-12-31" defaultValue={promo?.expires} /></label>
     {error && <p role="alert" className="error">{error}</p>}
-    <button className="primary-button" type="submit"><span className="plus-ring" aria-hidden="true">{promo ? <Check size={14} /> : <Plus size={14} strokeWidth={1.8} />}</span>{promo ? 'Save changes' : 'Save promo'}</button>
-    {promo && <div className="actions"><button className="text-button" type="button" onClick={() => setRemoving(true)}><Trash2 size={16} aria-hidden="true" />Delete</button></div>}
+    <button className="primary-button" type="submit"><span className="plus-ring" aria-hidden="true">{promo ? <Check size={14} /> : <Plus size={14} strokeWidth={1.8} />}</span>{promo ? t.saveChanges : t.savePromo}</button>
+    {promo && <div className="actions"><button className="text-button" type="button" onClick={() => setRemoving(true)}><Trash2 size={16} aria-hidden="true" />{t.delete}</button></div>}
   </form>;
 }
 
 export function PromoTicket({ promo, onEdit, onNotice }: {
   promo: Promo; onEdit: () => void; onNotice: (message: string) => void;
 }) {
+  const t = useT();
   const [copied, setCopied] = useState(false);
   const expiry = promo.expires ? new Date(promo.expires + 'T23:59:59.999') : null;
   const expired = expiry && +expiry < Date.now();
   const daysLeft = expiry ? Math.ceil((+expiry - Date.now()) / 86400000) : Infinity;
-  const date = expiry?.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+  const date = expiry?.toLocaleDateString(t.locale, { day: 'numeric', month: 'short', year: 'numeric' });
   return <article className="coupon">
     <div className="coupon-head">
       <div><h2>{promo.store}</h2>{promo.offer && <p className="coupon-offer">{promo.offer}</p>}</div>
-      <button className="icon-button" aria-label={`Edit promo for ${promo.store}`} onClick={onEdit}><Pencil size={17} /></button>
+      <button className="icon-button" aria-label={t.editPromoFor(promo.store)} onClick={onEdit}><Pencil size={17} /></button>
     </div>
     <div className="coupon-code">
       <code>{promo.code}</code>
-      <button className="outline-button" aria-label={`Copy promo code for ${promo.store}`} onClick={async () => {
+      <button className="outline-button" aria-label={t.copyPromoFor(promo.store)} onClick={async () => {
         try {
           await navigator.clipboard.writeText(promo.code);
           setCopied(true);
-          onNotice('Promo code copied.');
-        } catch { onNotice('Copy unavailable. Select the code to copy it manually.'); }
-      }}>{copied ? <Check size={16} aria-hidden="true" /> : <Copy size={16} aria-hidden="true" />}{copied ? 'Copied' : 'Copy'}</button>
+          onNotice(t.promoCopied);
+        } catch { onNotice(t.copyUnavailable); }
+      }}>{copied ? <Check size={16} aria-hidden="true" /> : <Copy size={16} aria-hidden="true" />}{copied ? t.copied : t.copy}</button>
     </div>
     {expiry && <p className={`coupon-meta${expired ? ' expired' : ''}`}>
-      <span>{expired ? 'Expired ' : 'Until '}<time dateTime={promo.expires}>{date}</time></span>
-      {!expired && daysLeft <= 7 && <span className="chip">Expiring soon</span>}
+      <span>{expired ? t.expired : t.until}{' '}<time dateTime={promo.expires}>{date}</time></span>
+      {!expired && daysLeft <= 7 && <span className="chip">{t.expiringSoon}</span>}
     </p>}
   </article>;
 }

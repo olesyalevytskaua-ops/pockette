@@ -1,3 +1,4 @@
+import type { Strings } from './i18n';
 export const formats = {
   code128: 'Code 128',
   ean13: 'EAN-13',
@@ -15,23 +16,23 @@ export function isCodeFormat(value: unknown): value is CodeFormat {
   return typeof value === 'string' && Object.hasOwn(formats, value);
 }
 
-export function validateCode(number: string, format: CodeFormat): string {
-  if (!number.trim()) return 'Enter the card number or code.';
-  if (number.length > CODE_LIMIT) return `Use a code of ${CODE_LIMIT} characters or fewer.`;
+export function validateCode(number: string, format: CodeFormat, t: Strings): string {
+  if (!number.trim()) return t.enterCode;
+  if (number.length > CODE_LIMIT) return t.codeTooLong(CODE_LIMIT);
   if (format === 'code128' && !/^[\x20-\x7e]+$/.test(number)) {
-    return 'Code 128 supports basic letters, numbers and punctuation.';
+    return t.code128Chars;
   }
   if (format === 'code39' && !/^[0-9A-Z .$/+%\-]+$/.test(number)) {
-    return 'Code 39 supports uppercase letters, numbers, spaces and . $ / + % -';
+    return t.code39Chars;
   }
   const length = format === 'ean13' ? 13 : format === 'ean8' ? 8 : format === 'upca' ? 12 : 0;
   if (length) {
     if (number.length !== length || !/^\d+$/.test(number)) {
-      return `${formats[format]} needs exactly ${length} digits, including the check digit.`;
+      return t.needsDigits(formats[format], length);
     }
     const sum = [...number.slice(0, -1)].reverse().reduce((total, digit, i) => total + Number(digit) * (i % 2 ? 1 : 3), 0);
     if ((10 - sum % 10) % 10 !== Number(number.at(-1))) {
-      return `The ${formats[format]} check digit is incorrect. Check the number on your card.`;
+      return t.badCheckDigit(formats[format]);
     }
   }
   return '';

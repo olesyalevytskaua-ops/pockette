@@ -11,6 +11,7 @@ import './style.css';
 import { isPromo, PromoForm, PromoTicket, type Promo } from './promos';
 import { CODE_LIMIT, formats, isCodeFormat, validateCode, type CodeFormat, type ScannedCode } from './code-formats';
 import { cardTone, presets } from './tone';
+import { dictionaries, I18n, LANG_KEY, useT, type Lang, type Strings } from './i18n';
 
 const CodeScanner = React.lazy(() => import('./CodeScanner'));
 
@@ -40,12 +41,12 @@ function parseData(value: unknown): Data {
   return { cards: data.cards, promos: data.promos };
 }
 
-function load(): { data: Data; error: string } {
+function load(): { data: Data; error: '' | 'read' } {
   try {
     const raw = localStorage.getItem(KEY);
     return { data: raw === null ? { cards: initial, promos: [] } : parseData(JSON.parse(raw)), error: '' };
   } catch {
-    return { data: { cards: [], promos: [] }, error: 'Saved items could not be read. Export a backup before making changes.' };
+    return { data: { cards: [], promos: [] }, error: 'read' };
   }
 }
 
@@ -68,34 +69,35 @@ function applyTheme(appearance: Appearance) {
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#140C0F' : '#F8F6F4');
 }
 
-function codeError(number: string, format: CodeFormat) {
-  const problem = validateCode(number, format);
+function codeError(number: string, format: CodeFormat, t: Strings) {
+  const problem = validateCode(number, format, t);
   if (problem) return problem;
   try {
     bwipjs.toCanvas(document.createElement('canvas'), { bcid: format, text: number, scale: 2, height: 14 });
     return '';
   } catch {
-    return 'This code cannot be rendered. Check the value or choose another format.';
+    return t.cannotRender;
   }
 }
 /** "4820001277340" → "4820 0012 7734 0". Only digit runs are grouped; anything else shows as stored. */
 const grouped = (n: string) => /^\d+$/.test(n) ? n.replace(/(\d{4})(?=\d)/g, '$1 ') : n;
 
 function Code({card}:{card:Card}) {
+  const t=useT();
   const ref=useRef<HTMLCanvasElement>(null);
   const [error,setError]=useState('');
   // paddingwidth keeps a quiet zone of at least 10 module widths each side.
-  useEffect(()=>{try{bwipjs.toCanvas(ref.current!,{bcid:card.format,text:card.number,scale:3,height:18,paddingwidth:card.format==='qrcode'?4:12,paddingheight:4,backgroundcolor:'ffffff',barcolor:'000000',...(card.format==='qrcode'?{eclevel:'M'}:{})});setError('');}catch{setError('Unable to draw this code. Edit the card to check its number and format.');}},[card]);
-  return <div className="code-panel">{error?<p role="alert">{error}</p>:<canvas ref={ref} className={card.format==='qrcode'?'qr':''} role="img" aria-label={`${card.format==='qrcode'?'QR code':'Barcode'} for ${card.store}. Card number ${card.number}`}/>}<p className="code-value">{card.number}</p></div>;
+  useEffect(()=>{try{bwipjs.toCanvas(ref.current!,{bcid:card.format,text:card.number,scale:3,height:18,paddingwidth:card.format==='qrcode'?4:12,paddingheight:4,backgroundcolor:'ffffff',barcolor:'000000',...(card.format==='qrcode'?{eclevel:'M'}:{})});setError('');}catch{setError(t.cannotDraw);}},[card,t]);
+  return <div className="code-panel">{error?<p role="alert">{error}</p>:<canvas ref={ref} className={card.format==='qrcode'?'qr':''} role="img" aria-label={(card.format==='qrcode'?t.qrFor:t.barcodeFor)(card.store,card.number)}/>}<p className="code-value">{card.number}</p></div>;
 }
 
 function Modal({title,onClose,children,card}:{title:string;onClose:()=>void;children:React.ReactNode;card?:Card}) {
-  const ref=useRef<HTMLDialogElement>(null);const titleId=useId();
+  const t=useT();const ref=useRef<HTMLDialogElement>(null);const titleId=useId();
   useEffect(()=>{const previous=document.activeElement as HTMLElement;ref.current?.showModal();return()=>{previous?.focus();};},[]);
   return <dialog ref={ref} aria-labelledby={titleId} onCancel={e=>{e.preventDefault();onClose();}} onClick={e=>{if(e.target===ref.current)onClose();}}>
     {card
-      ? <div className="modal-head card-head store-card" style={cardTone(card.color)}><div className="card-id"><h2 id={titleId}>{title}</h2>{card.label && <span className="card-category">{card.label}</span>}</div><button className="icon-button" aria-label="Close dialog" onClick={onClose}><X/></button></div>
-      : <div className="modal-head"><h2 id={titleId}>{title}</h2><button className="icon-button" aria-label="Close dialog" onClick={onClose}><X/></button></div>}
+      ? <div className="modal-head card-head store-card" style={cardTone(card.color)}><div className="card-id"><h2 id={titleId}>{title}</h2>{card.label && <span className="card-category">{card.label}</span>}</div><button className="icon-button" aria-label={t.close} onClick={onClose}><X/></button></div>
+      : <div className="modal-head"><h2 id={titleId}>{title}</h2><button className="icon-button" aria-label={t.close} onClick={onClose}><X/></button></div>}
     <div className="sheet-body">{children}</div>
   </dialog>;
 }
@@ -107,24 +109,26 @@ const CardsIcon = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="no
 const CouponIcon = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" aria-hidden="true"><path d="M4 7h16v3a2 2 0 0 0 0 4v3H4v-3a2 2 0 0 0 0-4z" /><path d="M10 8v8" strokeDasharray="2 2" /></svg>;
 const SettingsIcon = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8" /><circle cx="16" cy="7" r="2" /><circle cx="10" cy="17" r="2" /></svg>;
 
-const cardLabel = (card: Card) => `Open ${card.store}, ${card.label || 'loyalty card'}${card.demo ? ', demo card' : ''}`;
+const cardLabel = (t: Strings, card: Card) => t.openCard(card.store, card.label, !!card.demo);
 
 /** CardStrip: a full-size card in the stack. The front card adds the code row. */
 function CardStrip({ card, front, onClick }: { card: Card; front?: boolean; onClick?: () => void }) {
   // Without onClick it is a picture of a card (the editor's live preview), not a control.
+  const t = useT();
   const Tag = onClick ? 'button' : 'div';
-  return <Tag {...(onClick ? { type: 'button' as const, onClick, 'aria-label': cardLabel(card) } : {})} className={`store-card card-strip${front ? ' front' : ''}`} style={cardTone(card.color)}>
+  return <Tag {...(onClick ? { type: 'button' as const, onClick, 'aria-label': cardLabel(t, card) } : {})} className={`store-card card-strip${front ? ' front' : ''}`} style={cardTone(card.color)}>
     <span className="card-id"><span className="card-name">{card.store}</span>{card.label && <span className="card-category">{card.label}</span>}</span>
     {front && <>
       <span className="card-rule" aria-hidden="true" />
-      <span className="card-foot"><span><BarcodeGlyph />Tap to show code</span><span className="card-number">{grouped(card.number)}</span></span>
+      <span className="card-foot"><span><BarcodeGlyph />{t.tapToShow}</span><span className="card-number">{grouped(card.number)}</span></span>
     </>}
   </Tag>;
 }
 
 /** CardTile: the same card surface at grid size. */
 function CardTile({ card, onClick }: { card: Card; onClick: () => void }) {
-  return <button type="button" className="store-card card-tile" style={cardTone(card.color)} onClick={onClick} aria-label={cardLabel(card)}>
+  const t = useT();
+  return <button type="button" className="store-card card-tile" style={cardTone(card.color)} onClick={onClick} aria-label={cardLabel(t, card)}>
     <span className="card-glyph"><BarcodeGlyph size={18} /></span>
     <span className="card-id"><span className="card-name">{card.store}</span>{card.label && <span className="card-category">{card.label}</span>}</span>
   </button>;
@@ -143,17 +147,21 @@ function Segmented<T extends string>({ label, value, options, onChange, icons }:
     {options.map(o => <button key={o.value} type="button" aria-pressed={value === o.value} aria-label={o.icon ? o.label : undefined} onClick={() => onChange(o.value)}>{o.icon ?? o.label}</button>)}
   </div>;
 }
-const LayoutSwitch = ({ value, onChange }: { value: Layout; onChange: (v: Layout) => void }) =>
-  <Segmented label="Card layout" icons value={value} onChange={onChange} options={[{ value: 'stack', label: 'Stack view', icon: <StackIcon /> }, { value: 'tile', label: 'Tile view', icon: <TileIcon /> }]} />;
+function LayoutSwitch({ value, onChange }: { value: Layout; onChange: (v: Layout) => void }) {
+  const t = useT();
+  return <Segmented label={t.cardLayout} icons value={value} onChange={onChange} options={[{ value: 'stack', label: t.stackView, icon: <StackIcon /> }, { value: 'tile', label: t.tileView, icon: <TileIcon /> }]} />;
+}
 
 function SearchField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  const t = useT();
   return <label className="search-field"><Search size={20} strokeWidth={1.6} aria-hidden="true" />
     <input type="search" aria-label={label} placeholder={label} value={value} onChange={e => onChange(e.target.value)} />
-    {value && <button type="button" className="icon-button" aria-label="Clear search" onClick={() => onChange('')}><X size={16} /></button>}
+    {value && <button type="button" className="icon-button" aria-label={t.clearSearch} onClick={() => onChange('')}><X size={16} /></button>}
   </label>;
 }
 
 function Editor({ card, onSave, onClose }: { card?: Card; onSave: (c: Card) => void; onClose: () => void }) {
+  const t = useT();
   const [store, setStore] = useState(card?.store ?? '');
   const [label, setLabel] = useState(card?.label ?? '');
   const [number, setNumber] = useState(card?.number ?? '');
@@ -166,8 +174,8 @@ function Editor({ card, onSave, onClose }: { card?: Card; onSave: (c: Card) => v
   const storeInput = useRef<HTMLInputElement>(null);
   const returnFocus = useRef<'scan' | 'store' | null>(null);
   // A card saved with an older colour keeps it as a choice until it is changed.
-  const swatches: { name: string; color: string }[] = [...presets];
-  if (card && !presets.some(p => p.color.toLowerCase() === card.color.toLowerCase())) swatches.push({ name: 'Current colour', color: card.color });
+  const swatches = presets.map(p => ({ name: t.colours[p.name], color: p.color as string }));
+  if (card && !presets.some(p => p.color.toLowerCase() === card.color.toLowerCase())) swatches.push({ name: t.currentColour, color: card.color });
 
   useEffect(() => {
     if (scanning) return;
@@ -182,7 +190,7 @@ function Editor({ card, onSave, onClose }: { card?: Card; onSave: (c: Card) => v
   }
 
   function useCode(code: ScannedCode) {
-    const problem = codeError(code.number, code.format);
+    const problem = codeError(code.number, code.format, t);
     if (problem) {
       setError(problem);
       backToForm();
@@ -191,41 +199,41 @@ function Editor({ card, onSave, onClose }: { card?: Card; onSave: (c: Card) => v
     setNumber(code.number);
     setFormat(code.format);
     setError('');
-    setScanNotice(`${formats[code.format]} scanned. Review the code before saving.`);
+    setScanNotice(t.scanned(formats[code.format]));
     returnFocus.current = store.trim() ? 'scan' : 'store';
     setScanning(false);
   }
 
-  const preview: Card = { id: 'preview', store: store.trim() || 'Store name', label: label.trim(), number: number || '0000 0000', format, color };
-  return <Modal title={scanning ? 'Scan a code' : card ? 'Edit card' : 'Add a card'} onClose={scanning ? backToForm : onClose}>
-    {scanning ? <React.Suspense fallback={<p role="status">Opening scanner…</p>}>
+  const preview: Card = { id: 'preview', store: store.trim() || t.storeName, label: label.trim(), number: number || '0000 0000', format, color };
+  return <Modal title={scanning ? t.scanCode : card ? t.editCard : t.addCard} onClose={scanning ? backToForm : onClose}>
+    {scanning ? <React.Suspense fallback={<p role="status">{t.openingScanner}</p>}>
       <CodeScanner onCode={useCode} onBack={backToForm} />
     </React.Suspense> : <>
       <div className="preview" aria-hidden="true"><CardStrip card={preview} /></div>
       <button ref={scanButton} className="outline-button scan-launch" type="button" onClick={() => {
         setScanNotice('');
         setScanning(true);
-      }}><ScanLine size={19} aria-hidden="true" />Scan barcode or QR code</button>
+      }}><ScanLine size={19} aria-hidden="true" />{t.scanButton}</button>
       {scanNotice && <p className="banner" role="status">{scanNotice}</p>}
       <form onSubmit={e => {
         e.preventDefault();
-        const err = codeError(number, format);
+        const err = codeError(number, format, t);
         if (err) { setError(err); return; }
         onSave({ id: card?.id ?? crypto.randomUUID(), store: store.trim(), label: label.trim(), number, format, color, demo: card?.demo });
       }}>
-        <label>Store name<input ref={storeInput} autoFocus required maxLength={60} value={store} onChange={e => setStore(e.target.value)} placeholder="e.g. IKEA" pattern={'.*\\S.*'} /></label>
-        <label>Card name <span className="small">(optional)</span><input maxLength={80} value={label} onChange={e => setLabel(e.target.value)} placeholder="e.g. Family card" /></label>
-        <label>Code format<select value={format} onChange={e => { setFormat(e.target.value as CodeFormat); setError(''); }}>
-          {Object.entries(formats).map(([value, name]) => <option key={value} value={value}>{value === 'qrcode' ? name : `Barcode · ${name}`}</option>)}
+        <label>{t.storeName}<input ref={storeInput} autoFocus required maxLength={60} value={store} onChange={e => setStore(e.target.value)} placeholder={t.storePlaceholder} pattern={'.*\\S.*'} /></label>
+        <label>{t.cardName} <span className="small">{t.optional}</span><input maxLength={80} value={label} onChange={e => setLabel(e.target.value)} placeholder={t.cardNamePlaceholder} /></label>
+        <label>{t.codeFormat}<select value={format} onChange={e => { setFormat(e.target.value as CodeFormat); setError(''); }}>
+          {Object.entries(formats).map(([value, name]) => <option key={value} value={value}>{value === 'qrcode' ? name : t.barcodeFormat(name)}</option>)}
         </select></label>
-        <label>Card number or code
+        <label>{t.cardNumber}
           {format === 'qrcode'
-            ? <textarea required value={number} maxLength={CODE_LIMIT} rows={2} onChange={e => { setNumber(e.target.value); setError(''); }} autoCapitalize="off" spellCheck={false} placeholder="Enter exactly as shown on your card"  />
-            : <input required value={number} maxLength={CODE_LIMIT} onChange={e => { setNumber(e.target.value); setError(''); }} autoCapitalize="off" spellCheck={false} placeholder="Enter exactly as shown on your card"  />}
+            ? <textarea required value={number} maxLength={CODE_LIMIT} rows={2} onChange={e => { setNumber(e.target.value); setError(''); }} autoCapitalize="off" spellCheck={false} placeholder={t.cardNumberPlaceholder}  />
+            : <input required value={number} maxLength={CODE_LIMIT} onChange={e => { setNumber(e.target.value); setError(''); }} autoCapitalize="off" spellCheck={false} placeholder={t.cardNumberPlaceholder}  />}
         </label>
-        <fieldset><legend>Card colour</legend><div className="swatches">{swatches.map(s => <button type="button" key={s.color} style={cardTone(s.color)} className="swatch" aria-label={s.name} aria-pressed={color.toLowerCase() === s.color.toLowerCase()} onClick={() => setColor(s.color)}>{color.toLowerCase() === s.color.toLowerCase() && <Check size={18} />}</button>)}</div></fieldset>
+        <fieldset><legend>{t.cardColour}</legend><div className="swatches">{swatches.map(s => <button type="button" key={s.color} style={cardTone(s.color)} className="swatch" aria-label={s.name} aria-pressed={color.toLowerCase() === s.color.toLowerCase()} onClick={() => setColor(s.color)}>{color.toLowerCase() === s.color.toLowerCase() && <Check size={18} />}</button>)}</div></fieldset>
         {error && <p role="alert" className="error">{error}</p>}
-        <PrimaryButton type="submit">{card ? 'Save changes' : 'Add to my wallet'}</PrimaryButton>
+        <PrimaryButton type="submit">{card ? t.saveChanges : t.addToWallet}</PrimaryButton>
       </form>
     </>}
   </Modal>;
@@ -234,7 +242,9 @@ function Editor({ card, onSave, onClose }: { card?: Card; onSave: (c: Card) => v
 function App() {
   const [loaded] = useState(load);
   const [data, setData] = useState(loaded.data);
-  const [storageError, setStorageError] = useState(loaded.error);
+  const [storageError, setStorageError] = useState<'' | 'read' | 'save'>(loaded.error);
+  const [lang, setLang] = useState<Lang>(() => readPref(LANG_KEY, ['en', 'uk'] as Lang[], navigator.language.toLowerCase().startsWith('uk') ? 'uk' : 'en'));
+  const t = dictionaries[lang];
   const [appearance, setAppearance] = useState<Appearance>(() => readPref(THEME_KEY, ['light', 'dark'] as Appearance[], 'system'));
   const [layout, setLayout] = useState<Layout>(() => readPref(LAYOUT_KEY, ['stack', 'tile'] as const, 'stack'));
   const [tab, setTab] = useState<Tab>('cards');
@@ -259,6 +269,8 @@ function App() {
     return () => media.removeEventListener('change', update);
   }, [appearance]);
 
+  useEffect(() => { document.documentElement.lang = lang; }, [lang]);
+
   useEffect(() => {
     const update = () => setOffline(!navigator.onLine);
     window.addEventListener('online', update);
@@ -278,6 +290,10 @@ function App() {
   function chooseAppearance(next: Appearance) {
     setAppearance(next);
     writePref(THEME_KEY, next === 'system' ? null : next);
+  }
+  function chooseLang(next: Lang) {
+    setLang(next);
+    writePref(LANG_KEY, next);
   }
   function chooseLayout(next: Layout) {
     setLayout(next);
@@ -303,9 +319,8 @@ function App() {
       setNotice(message);
       return true;
     } catch {
-      const message = 'Could not save. Export a backup and check browser storage.';
-      setStorageError(message);
-      setNotice(message);
+      setStorageError('save');
+      setNotice(t.saveError);
       return false;
     }
   }
@@ -316,7 +331,7 @@ function App() {
     if (from < 0 || to < 0 || to >= cards.length) return;
     const next = [...cards];
     [next[from], next[to]] = [next[to], next[from]];
-    commit({ ...data, cards: next }, `${cards[from].store} moved ${by < 0 ? 'up' : 'down'}.`);
+    commit({ ...data, cards: next }, (by < 0 ? t.movedUp : t.movedDown)(cards[from].store));
   }
 
   function exportWallet() {
@@ -328,8 +343,8 @@ function App() {
       link.download = 'pockette-backup.json';
       link.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-      setNotice('Backup downloaded.');
-    } catch { setNotice('Browser storage is unavailable.'); }
+      setNotice(t.backupDownloaded);
+    } catch { setNotice(t.storageUnavailable); }
   }
 
   async function importWallet(file?: File) {
@@ -338,7 +353,7 @@ function App() {
       if (file.size > 1000000) throw Error();
       const incoming = parseData(JSON.parse(await file.text()));
       if (incoming.cards.length + incoming.promos.length > 1000
-        || incoming.cards.some(c => !!codeError(c.number, c.format))) throw Error();
+        || incoming.cards.some(c => !!codeError(c.number, c.format, t))) throw Error();
       const next = { cards: [...cards], promos: [...promos] };
       let added = 0;
       for (const c of incoming.cards) {
@@ -351,8 +366,8 @@ function App() {
         next.promos.push({ ...p, id: crypto.randomUUID() });
         added++;
       }
-      commit(next, added === 1 ? '1 item imported.' : `${added} items imported.`);
-    } catch { setNotice('Choose a valid Pockette backup (up to 1 MB).'); }
+      commit(next, t.imported(added));
+    } catch { setNotice(t.invalidBackup); }
     finally { if (inputRef.current) inputRef.current.value = ''; }
   }
 
@@ -362,156 +377,157 @@ function App() {
   const open = (card: Card) => { setSelected(card); setDeleting(false); };
   const addCard = () => setEditor({});
   const addPromo = () => setPromoEditor({});
-  const count = (n: number, one: string) => `${n} ${one}${n === 1 ? '' : 's'}`;
 
   const banners = <>
-    {offline && <p className="banner"><WifiOff size={16} aria-hidden="true" />Offline. Everything here still works.</p>}
-    {storageError && <p className="error" role="alert">{storageError}</p>}
+    {offline && <p className="banner"><WifiOff size={16} aria-hidden="true" />{t.offline}</p>}
+    {storageError && <p className="error" role="alert">{storageError === 'read' ? t.readError : t.saveError}</p>}
   </>;
 
   function cardsScreen() {
     if (!cards.length) return <div className="empty">
-      <h2>No cards yet</h2>
-      <p>Add a loyalty card to keep its barcode ready at the till, even offline.</p>
-      <PrimaryButton onClick={addCard}>Add your first card</PrimaryButton>
+      <h2>{t.noCards}</h2>
+      <p>{t.noCardsText}</p>
+      <PrimaryButton onClick={addCard}>{t.addFirstCard}</PrimaryButton>
     </div>;
     if (!filteredCards.length) return <div className="empty">
-      <h2>No matches</h2>
-      <p>Nothing matches “{query.trim()}”.</p>
-      <button className="text-button" onClick={() => setQuery('')}>Reset search</button>
-      <PrimaryButton onClick={addCard}>Add a card</PrimaryButton>
+      <h2>{t.noMatches}</h2>
+      <p>{t.nothingMatches(query.trim())}</p>
+      <button className="text-button" onClick={() => setQuery('')}>{t.resetSearch}</button>
+      <PrimaryButton onClick={addCard}>{t.addCard}</PrimaryButton>
     </div>;
-    if (reordering) return <ul className="reorder-list" aria-label="Reorder cards">
+    if (reordering) return <ul className="reorder-list" aria-label={t.reorderCards}>
       {cards.map((card, i) => <li key={card.id} className="reorder-row" style={cardTone(card.color)}>
         <span className="reorder-swatch" aria-hidden="true" />
         <span className="card-id"><span className="card-name">{card.store}</span>{card.label && <span className="card-category">{card.label}</span>}</span>
-        <button className="icon-button" aria-label={`Move ${card.store} up`} disabled={i === 0} onClick={() => move(card.id, -1)}><ChevronUp size={20} /></button>
-        <button className="icon-button" aria-label={`Move ${card.store} down`} disabled={i === cards.length - 1} onClick={() => move(card.id, 1)}><ChevronDown size={20} /></button>
+        <button className="icon-button" aria-label={t.moveUp(card.store)} disabled={i === 0} onClick={() => move(card.id, -1)}><ChevronUp size={20} /></button>
+        <button className="icon-button" aria-label={t.moveDown(card.store)} disabled={i === cards.length - 1} onClick={() => move(card.id, 1)}><ChevronDown size={20} /></button>
       </li>)}
     </ul>;
     return layout === 'stack' ? <>
       <ul className="card-stack">
         {filteredCards.map((card, i) => <li key={card.id}><CardStrip card={card} front={i === filteredCards.length - 1} onClick={() => open(card)} /></li>)}
       </ul>
-      <PrimaryButton className="home-add" onClick={addCard}>Add a card</PrimaryButton>
+      <PrimaryButton className="home-add" onClick={addCard}>{t.addCard}</PrimaryButton>
     </> : <ul className="card-grid">
       {filteredCards.map(card => <li key={card.id}><CardTile card={card} onClick={() => open(card)} /></li>)}
-      <li><button className="add-tile" onClick={addCard}><span className="plus-disc" aria-hidden="true"><Plus size={16} strokeWidth={1.8} /></span>Add a card</button></li>
+      <li><button className="add-tile" onClick={addCard}><span className="plus-disc" aria-hidden="true"><Plus size={16} strokeWidth={1.8} /></span>{t.addCard}</button></li>
     </ul>;
   }
 
-  return <>
-    <a className="skip-link" href="#screen">Skip to content</a>
+  return <I18n.Provider value={t}>
+    <a className="skip-link" href="#screen">{t.skip}</a>
     <div className="app">
       <header className="header">
-        <a className="wordmark" href="/" aria-label="Pockette home">Pockette<span aria-hidden="true">.</span></a>
+        <a className="wordmark" href="/" aria-label={t.home}>Pockette<span aria-hidden="true">.</span></a>
         {tab === 'cards' && !reordering && <LayoutSwitch value={layout} onChange={chooseLayout} />}
       </header>
       <div className="hairline" aria-hidden="true" />
       <main id="screen">
         {tab === 'cards' && <>
-          <p className="eyebrow">{count(cards.length, 'card')} · ready offline</p>
-          <h1 className="screen-title">Your cards</h1>
-          {cards.length > 0 && !reordering && <SearchField label="Search cards" value={query} onChange={setQuery} />}
+          <p className="eyebrow">{t.cardCount(cards.length)} · {t.readyOffline}</p>
+          <h1 className="screen-title">{t.yourCards}</h1>
+          {cards.length > 0 && !reordering && <SearchField label={t.searchCards} value={query} onChange={setQuery} />}
           {banners}
-          <p className="sr-only" role="status">{`${filteredCards.length} cards found`}</p>
+          <p className="sr-only" role="status">{t.cardsFound(filteredCards.length)}</p>
           {cards.length > 1 && !normalized && <div className="section-row">
-            <h2 className="section-label">{reordering ? 'Move cards up or down' : 'In your order'}</h2>
-            <button className="text-button" aria-pressed={reordering} onClick={() => setReordering(!reordering)}>{reordering ? 'Done' : 'Reorder'}</button>
+            <h2 className="section-label">{reordering ? t.moveCards : t.inYourOrder}</h2>
+            <button className="text-button" aria-pressed={reordering} onClick={() => setReordering(!reordering)}>{reordering ? t.done : t.reorder}</button>
           </div>}
           {hint && layout === 'stack' && !reordering && <div className="hint" role="status">
-            <p>Switch to grid to see more at once</p>
-            <button className="text-button" onClick={() => chooseLayout('tile')}>Use grid</button>
-            <button className="icon-button" aria-label="Dismiss tip" onClick={dismissHint}><X size={16} /></button>
+            <p>{t.gridHint}</p>
+            <button className="text-button" onClick={() => chooseLayout('tile')}>{t.useGrid}</button>
+            <button className="icon-button" aria-label={t.dismissTip} onClick={dismissHint}><X size={16} /></button>
           </div>}
           {cardsScreen()}
         </>}
 
         {tab === 'coupons' && <>
-          <p className="eyebrow">{count(promos.length, 'coupon')} · ready offline</p>
-          <h1 className="screen-title">Coupons</h1>
-          {promos.length > 0 && <SearchField label="Search coupons" value={query} onChange={setQuery} />}
+          <p className="eyebrow">{t.couponCount(promos.length)} · {t.readyOffline}</p>
+          <h1 className="screen-title">{t.coupons}</h1>
+          {promos.length > 0 && <SearchField label={t.searchCoupons} value={query} onChange={setQuery} />}
           {banners}
-          <p className="sr-only" role="status">{`${filteredPromos.length} coupons found`}</p>
+          <p className="sr-only" role="status">{t.couponsFound(filteredPromos.length)}</p>
           {filteredPromos.length > 0 ? <>
-            <div className="section-row"><h2 className="section-label">Saved codes</h2></div>
+            <div className="section-row"><h2 className="section-label">{t.savedCodes}</h2></div>
             <ul className="coupon-list">{filteredPromos.map(promo => <li key={promo.id}><PromoTicket key={promo.code} promo={promo} onEdit={() => setPromoEditor({ promo })} onNotice={setNotice} /></li>)}</ul>
-            <PrimaryButton className="home-add" onClick={addPromo}>Add a coupon</PrimaryButton>
+            <PrimaryButton className="home-add" onClick={addPromo}>{t.addCoupon}</PrimaryButton>
           </> : <div className="empty">
-            <h2>{normalized ? 'No matches' : 'No coupons yet'}</h2>
-            <p>{normalized ? `Nothing matches “${query.trim()}”.` : 'Save a promo code once and copy it at checkout.'}</p>
-            {normalized ? <button className="text-button" onClick={() => setQuery('')}>Reset search</button>
-              : <PrimaryButton onClick={addPromo}>Add a coupon</PrimaryButton>}
+            <h2>{normalized ? t.noMatches : t.noCoupons}</h2>
+            <p>{normalized ? t.nothingMatches(query.trim()) : t.noCouponsText}</p>
+            {normalized ? <button className="text-button" onClick={() => setQuery('')}>{t.resetSearch}</button>
+              : <PrimaryButton onClick={addPromo}>{t.addCoupon}</PrimaryButton>}
           </div>}
         </>}
 
         {tab === 'settings' && <>
-          <p className="eyebrow">Stored on this device</p>
-          <h1 className="screen-title">Settings</h1>
+          <p className="eyebrow">{t.storedHere}</p>
+          <h1 className="screen-title">{t.settings}</h1>
           {banners}
           <section className="settings-group" aria-labelledby="set-display">
-            <h2 id="set-display">Display</h2>
+            <h2 id="set-display">{t.display}</h2>
             <ul className="group">
-              <li className="row"><span className="row-text">Appearance</span>
-                <Segmented label="Appearance" value={appearance} onChange={chooseAppearance} options={[{ value: 'system', label: 'System' }, { value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }]} /></li>
-              <li className="row"><span className="row-text">Default card layout</span>
-                <Segmented label="Default card layout" value={layout} onChange={chooseLayout} options={[{ value: 'stack', label: 'Stack' }, { value: 'tile', label: 'Tile' }]} /></li>
+              <li className="row"><span className="row-text">{t.language}</span>
+                <Segmented label={t.language} value={lang} onChange={chooseLang} options={[{ value: 'en', label: 'English' }, { value: 'uk', label: 'Українська' }]} /></li>
+              <li className="row"><span className="row-text">{t.appearance}</span>
+                <Segmented label={t.appearance} value={appearance} onChange={chooseAppearance} options={[{ value: 'system', label: t.system }, { value: 'light', label: t.light }, { value: 'dark', label: t.dark }]} /></li>
+              <li className="row"><span className="row-text">{t.defaultLayout}</span>
+                <Segmented label={t.defaultLayout} value={layout} onChange={chooseLayout} options={[{ value: 'stack', label: t.stack }, { value: 'tile', label: t.tile }]} /></li>
             </ul>
           </section>
           <section className="settings-group" aria-labelledby="set-backup">
-            <h2 id="set-backup">Backup &amp; restore</h2>
+            <h2 id="set-backup">{t.backupRestore}</h2>
             <ul className="group">
-              <li><button className="row" onClick={exportWallet}><span className="row-text">Back up<small>Download cards and coupons as a file</small></span><Download size={18} className="chevron" aria-hidden="true" /></button></li>
-              <li><button className="row" onClick={() => inputRef.current?.click()}><span className="row-text">Import a backup<small>Merges without duplicates</small></span><Upload size={18} className="chevron" aria-hidden="true" /></button></li>
+              <li><button className="row" onClick={exportWallet}><span className="row-text">{t.backUp}<small>{t.backUpText}</small></span><Download size={18} className="chevron" aria-hidden="true" /></button></li>
+              <li><button className="row" onClick={() => inputRef.current?.click()}><span className="row-text">{t.importBackup}<small>{t.importText}</small></span><Upload size={18} className="chevron" aria-hidden="true" /></button></li>
             </ul>
-            <p className="settings-note">Backup files hold card numbers and codes in plain text. Nothing leaves this browser unless you share the file.</p>
+            <p className="settings-note">{t.backupNote}</p>
           </section>
         </>}
       </main>
       {/* Mounted on every tab so an import finishing after a tab switch still lands. */}
-      <input ref={inputRef} hidden type="file" accept=".json,application/json" aria-label="Import backup file" onChange={e => void importWallet(e.target.files?.[0])} />
+      <input ref={inputRef} hidden type="file" accept=".json,application/json" aria-label={t.importFile} onChange={e => void importWallet(e.target.files?.[0])} />
     </div>
 
-    <nav className="tabbar" aria-label="Main">
+    <nav className="tabbar" aria-label={t.mainNav}>
       <ul>
-        <li><button aria-current={tab === 'cards' ? 'page' : undefined} onClick={() => go('cards')}><CardsIcon />Cards</button></li>
-        <li><button aria-current={tab === 'coupons' ? 'page' : undefined} onClick={() => go('coupons')}><CouponIcon />Coupons</button></li>
-        <li><button aria-current={tab === 'settings' ? 'page' : undefined} onClick={() => go('settings')}><SettingsIcon />Settings</button></li>
+        <li><button aria-current={tab === 'cards' ? 'page' : undefined} onClick={() => go('cards')}><CardsIcon />{t.tabCards}</button></li>
+        <li><button aria-current={tab === 'coupons' ? 'page' : undefined} onClick={() => go('coupons')}><CouponIcon />{t.tabCoupons}</button></li>
+        <li><button aria-current={tab === 'settings' ? 'page' : undefined} onClick={() => go('settings')}><SettingsIcon />{t.tabSettings}</button></li>
       </ul>
     </nav>
 
     <p className={`notice${notice ? ' visible' : ''}`} role="status">{notice}</p>
     {editor && <Editor card={editor.card} onClose={() => setEditor(null)} onSave={card => {
       const next = editor.card ? cards.map(c => c.id === card.id ? card : c) : [...cards, card];
-      if (!commit({ ...data, cards: next }, editor.card ? 'Card updated.' : 'Card added.')) return;
+      if (!commit({ ...data, cards: next }, editor.card ? t.cardUpdated : t.cardAdded)) return;
       setEditor(null);
       if (!editor.card && next.length === 9 && layout === 'stack' && !hintSeen()) setHint(true);
     }} />}
-    {promoEditor && <Modal title={promoEditor.promo ? 'Edit coupon' : 'Add a coupon'} onClose={() => setPromoEditor(null)}>
+    {promoEditor && <Modal title={promoEditor.promo ? t.editCoupon : t.addCoupon} onClose={() => setPromoEditor(null)}>
       <PromoForm promo={promoEditor.promo} onSave={promo => {
         const next = promoEditor.promo ? promos.map(p => p.id === promo.id ? promo : p) : [...promos, promo];
-        if (commit({ ...data, promos: next }, 'Coupon saved.')) setPromoEditor(null);
+        if (commit({ ...data, promos: next }, t.couponSaved)) setPromoEditor(null);
       }} onRemove={() => {
-        if (commit({ ...data, promos: promos.filter(p => p.id !== promoEditor.promo?.id) }, 'Coupon removed.')) setPromoEditor(null);
+        if (commit({ ...data, promos: promos.filter(p => p.id !== promoEditor.promo?.id) }, t.couponRemoved)) setPromoEditor(null);
       }} />
     </Modal>}
     {selected && (deleting
-      ? <Modal title="Remove card?" onClose={() => setSelected(null)}>
-        <p>Remove {selected.store} from your wallet? Its barcode can’t be recovered unless you have a backup.</p>
-        <div className="actions"><button className="outline-button" onClick={() => setDeleting(false)}>Keep card</button>
+      ? <Modal title={t.removeCardQ} onClose={() => setSelected(null)}>
+        <p>{t.removeCardText(selected.store)}</p>
+        <div className="actions"><button className="outline-button" onClick={() => setDeleting(false)}>{t.keepCard}</button>
           <button className="outline-button danger-button" onClick={() => {
-            if (commit({ ...data, cards: cards.filter(c => c.id !== selected.id) }, 'Card removed.')) setSelected(null);
-          }}><Trash2 size={17} aria-hidden="true" />Remove card</button></div>
+            if (commit({ ...data, cards: cards.filter(c => c.id !== selected.id) }, t.cardRemoved)) setSelected(null);
+          }}><Trash2 size={17} aria-hidden="true" />{t.removeCard}</button></div>
       </Modal>
       : <Modal title={selected.store} card={selected} onClose={() => setSelected(null)}>
-        {selected.demo && <p className="banner"><Pin size={15} aria-hidden="true" />Demo card with a made-up number</p>}
+        {selected.demo && <p className="banner"><Pin size={15} aria-hidden="true" />{t.demoCard}</p>}
         <Code card={selected} />
         <div className="actions">
-          <button className="outline-button" onClick={() => { setEditor({ card: selected }); setSelected(null); }}><Pencil size={17} aria-hidden="true" />Edit card</button>
-          <button className="text-button" onClick={() => setDeleting(true)}><Trash2 size={17} aria-hidden="true" />Delete</button>
+          <button className="outline-button" onClick={() => { setEditor({ card: selected }); setSelected(null); }}><Pencil size={17} aria-hidden="true" />{t.editCard}</button>
+          <button className="text-button" onClick={() => setDeleting(true)}><Trash2 size={17} aria-hidden="true" />{t.delete}</button>
         </div>
       </Modal>)}
-  </>;
+  </I18n.Provider>;
 }
 
 createRoot(document.getElementById('root')!).render(<React.StrictMode><App /></React.StrictMode>);
