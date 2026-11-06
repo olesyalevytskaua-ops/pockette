@@ -375,3 +375,9 @@ legend { font-size: 13px; font-weight: 600; margin-bottom: 10px; padding: 0; }
   *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
   .store-card:hover, .store-card.pressed { transform: none !important; }
 }
+
+/* Empty states sit in the optical centre of the space above the tab bar. */
+.app:has(> main > .empty) { display: flex; flex-direction: column; min-height: 100dvh; }
+main:has(> .empty) { flex: 1; display: flex; flex-direction: column; padding-bottom: 6vh; }
+main > .empty { margin-block: auto; }
+main:has(> .empty) > .screen-title { margin-bottom: 18px; }
