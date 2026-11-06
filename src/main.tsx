@@ -442,20 +442,25 @@ function App() {
       <button className="text-button" onClick={() => setQuery('')}>{t.resetSearch}</button>
       <PrimaryButton onClick={addCard}>{t.addCard}</PrimaryButton>
     </div>;
+    const dragHint = cards.length > 1 && !normalized ? <p className="drag-hint">{t.dragHint}</p> : null;
     return layout === 'stack' ? <>
       <ul className="card-stack" ref={drag.listRef}>
         {drag.order.map((card, i) => <li key={card.id} data-drag-id={card.id} className={drag.draggingId === card.id ? 'lifted' : undefined}><CardStrip card={card} front={i === drag.order.length - 1} onClick={() => open(card)} drag={dragProps(card)} /></li>)}
       </ul>
+      {dragHint}
       <PrimaryButton className="home-add" onClick={addCard}>{t.addCard}</PrimaryButton>
-    </> : <ul className="card-grid" ref={drag.listRef}>
-      {drag.order.map(card => <li key={card.id} data-drag-id={card.id} className={drag.draggingId === card.id ? 'lifted' : undefined}><CardTile card={card} onClick={() => open(card)} drag={dragProps(card)} /></li>)}
-      <li><button className="add-tile" onClick={addCard}><span className="plus-disc" aria-hidden="true"><Plus size={16} strokeWidth={1.8} /></span>{t.addCard}</button></li>
-    </ul>;
+    </> : <>
+      <ul className="card-grid" ref={drag.listRef}>
+        {drag.order.map(card => <li key={card.id} data-drag-id={card.id} className={drag.draggingId === card.id ? 'lifted' : undefined}><CardTile card={card} onClick={() => open(card)} drag={dragProps(card)} /></li>)}
+        <li><button className="add-tile" onClick={addCard}><span className="plus-disc" aria-hidden="true"><Plus size={16} strokeWidth={1.8} /></span>{t.addCard}</button></li>
+      </ul>
+      {dragHint}
+    </>;
   }
 
   return <I18n.Provider value={t}>
     <a className="skip-link" href="#screen">{t.skip}</a>
-    <div className="app">
+    <div className={tab === 'cards' ? 'app app--cards' : 'app'}>
       <header className="header">
         <a className="wordmark" href="/" aria-label={t.home}>Pockette<span aria-hidden="true">.</span></a>
         {tab === 'cards' && <LayoutSwitch value={layout} onChange={chooseLayout} />}
@@ -468,7 +473,6 @@ function App() {
           {cards.length > 0 && <SearchField label={t.searchCards} value={query} onChange={setQuery} />}
           {banners}
           <p className="sr-only" role="status">{t.cardsFound(filteredCards.length)}</p>
-          {cards.length > 1 && !normalized && <p className="drag-hint">{t.dragHint}</p>}
           {hint && layout === 'stack' && <div className="hint" role="status">
             <p>{t.gridHint}</p>
             <button className="text-button" onClick={() => chooseLayout('tile')}>{t.useGrid}</button>

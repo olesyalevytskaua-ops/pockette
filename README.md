@@ -1,56 +1,63 @@
 # Pockette
 
-A mobile-first, offline wallet for loyalty cards and promo codes. Everything stays in the browser: no account, server, analytics or sync.
+**Loyalty cards and promo codes, ready at checkout.**
 
-## Run
+Pockette is a mobile-first wallet for the moment you’re asked for a loyalty card. Scan a card once, find it by store name, and tap to show the barcode or QR code. Keep coupons in the same place, ready to copy. After the first visit, the installed web app can open offline.
 
-Node.js 20.19+ or 22.12+.
+<p align="center">
+  <img src="docs/screenshots/wallet-light.jpg" alt="Pockette in light mode, showing search, four overlapping demo cards, and the Add a card button" width="280">
+  &nbsp;
+  <img src="docs/screenshots/wallet-dark.jpg" alt="The same Pockette wallet in dark mode, with deep bordeaux accents and softly lit card edges" width="280">
+</p>
+
+<p align="center"><em>The card stack in light and dark mode. Screenshots use demo cards.</em></p>
+
+## The experience
+
+- **Find the right card quickly.** Recognize stores in the overlapping stack, switch to tiles, or search by store or card name. Arrange cards by dragging or use the keyboard and card controls.
+- **Add cards from what you have.** Scan a barcode or QR code with the camera, choose a photo, or enter the value manually. Review the result before saving.
+- **Keep promo codes handy.** Save an offer and expiry date, see which codes expire soon, and copy a code with one tap.
+- **Make it yours.** Choose light, dark, or system appearance and switch between English and Ukrainian. Export or import a wallet backup from Settings.
+
+## Design decisions
+
+The stack borrows the familiarity of a physical wallet: each store name stays visible, and the front card gives the checkout action a clear place. The compact header keeps cards close to the top of the screen. The reorder hint sits below the stack, leaving search and card selection as the first things you see.
+
+Ivory, bordeaux, and champagne accents carry across both themes. Cormorant Garamond gives store names and headings character; Inter keeps controls easy to read. Touch feedback helps distinguish tapping from dragging, with reduced motion respected.
+
+## Built with
+
+**React · TypeScript · Vite · CSS · PWA**
+
+ZXing decodes images and camera frames on the device. bwip-js draws Code 128, EAN-13, EAN-8, UPC-A, Code 39, and QR codes. The service worker caches the app, fonts, and code tools for offline use. Cards and coupons are stored in the browser without an account or backend.
+
+## Run locally
+
+Use Node.js 20.19+ or 22.12+.
 
 ```sh
 npm ci
-npm run dev       # http://localhost:5173
-npm run phone     # same, over HTTPS for a phone on your Wi-Fi: the camera needs a secure address.
-                  # Open the Network URL it prints and accept the self-signed certificate once.
-npm run build     # production build with offline service worker, in dist/
-npm run preview   # http://localhost:4173
+npm run dev
 ```
 
-## Test
+Open [localhost:5173](http://localhost:5173/). To try the production build and offline support:
+
+```sh
+npm run build
+npm run preview
+```
+
+Open [localhost:4173](http://localhost:4173/), let the app load once, then try it offline. For testing on a phone over Wi-Fi, `npm run phone` serves a local HTTPS preview; camera access requires a secure browser context.
+
+## Testing and limits
+
+With the production build ready and the preview server stopped, run:
 
 ```sh
 npx playwright install chromium
 npm test
 ```
 
-The suite covers card CRUD, search, stack-card hit areas, Code 128 / QR / EAN-13 rendering and validation, offline reload, duplicate-safe backup import, photo and camera scanning, and coupon and theme persistence.
+The Playwright suite covers card creation and editing, reordering, code rendering, photo scanning and simulated camera input, offline reload, backup import, and coupon persistence. Physical checkout scanners still need testing.
 
-## Features
-
-- **Cards:** stack view (180px cards, 60px of each showing, full number on the front card) or tile view, switched from the header and remembered. Search, Reorder with Move up / Move down.
-- **Codes:** drawn locally for Code 128, EAN-13, EAN-8, UPC-A, Code 39 and QR, black on white with a quiet zone. EAN and UPC check digits are validated; leading zeros are kept.
-- **Scanning:** camera or photo, decoded on the device. Manual entry is always available.
-- **Coupons:** save, copy, edit and remove promo codes with optional offer and expiry; codes expiring within a week are flagged.
-- **Settings:** Appearance (System / Light / Dark), default card layout, JSON backup and import (merges without duplicates, up to 1,000 items / 1 MB).
-- **Languages:** English and Ukrainian, chosen in Settings (defaults to the browser language). Strings live in `src/i18n.ts`.
-- **Splash:** shown once per launch, about 2.4s, skipped by any tap or key; light and dark (`src/Splash.tsx`).
-- **PWA:** installable; the app shell, fonts and code renderer are precached after the first visit.
-
-## Design system
-
-Design System v2: Maison layout with Cellar Noir cards.
-
-- `src/style.css`: light and dark tokens, then the components (CardStrip, CardTile, AddCardTile, LayoutSwitch, PrimaryButton, SearchField, chips, TabBar, sheets, toast).
-- `src/tone.ts`: the six card presets (Bordeaux, Navy, Teal, Gold, Espresso, Purple) and the gradient derived for any other card colour, with text chosen for ≥ 4.5:1 contrast.
-- Type: Cormorant Garamond (display) and Inter (UI), self-hosted through `@fontsource`.
-
-## Project files
-
-- `src/main.tsx`: app shell, cards, editor, settings, storage and validation.
-- `src/promos.tsx`: coupon form and coupon row.
-- `src/CodeScanner.tsx`: camera and photo scanner.
-- `src/code-formats.ts`: supported symbologies and their validation.
-- `public/`: app icons. `tests/`: Playwright suite.
-
-## Data and limits
-
-Clearing browser data removes your cards, so export a backup first. Backup files hold card numbers and codes in plain text, and browser storage is not encrypted. Some stores use formats this app does not support (PDF417, Aztec, proprietary codes). Real checkout scanners still need testing.
+Wallet data belongs to the browser profile and address you use. Clearing site data removes the wallet, so export a backup first. Backup files contain code values in plain text.

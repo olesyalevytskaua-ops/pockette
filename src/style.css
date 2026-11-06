@@ -127,11 +127,12 @@ svg { flex-shrink: 0; }
 .search-field input::-webkit-search-cancel-button { display: none; }
 .search-field .icon-button { color: var(--text-2); }
 
-/* One quiet line where the reorder control used to be: dragging needs no mode. */
-/* The list owns its gap below the search field, so it holds when the hint hides during a search;
-   the hint pulls the list back to a 10px gap under itself. */
-.drag-hint { margin: 18px 0 -6px; font-size: 13px; color: var(--text-2); }
-.drag-hint + .hint { margin-top: 16px; }
+/* Keep the cards close to search, with the reorder hint below the collection. */
+.app--cards { padding-top: 12px; }
+.app--cards .hairline { margin-block: 8px 10px; }
+.app--cards .screen-title { font-size: clamp(32px, 8.5vw, 36px); }
+.app--cards .search-field { height: 44px; margin-top: 10px; }
+.drag-hint { margin: 16px 0 0; text-align: start; font-size: 13px; color: var(--text-2); }
 .section-row { display: flex; align-items: center; justify-content: space-between; margin: 18px 0 10px; }
 .section-label { font-size: 13px; font-weight: 600; }
 .text-button { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 4px; color: var(--accent); font-size: 13px; font-weight: 600; }
@@ -187,7 +188,7 @@ dialog[open] .card-head::after { animation: card-glint .9s cubic-bezier(.45, 0, 
 
 /* CardStrip (stack view): 180px cards, 60px of each showing. */
 .card-stack, .card-grid, .coupon-list { list-style: none; margin: 0; padding: 0; }
-.card-stack, .card-grid { margin-top: 16px; }
+.card-stack, .card-grid { margin-top: 12px; }
 .hint + .card-stack, .hint + .card-grid { margin-top: 0; }
 .card-stack { display: flex; flex-direction: column; }
 .card-stack li { position: relative; }
