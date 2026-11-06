@@ -12,6 +12,8 @@ Pockette is a mobile-first wallet for the moment you’re asked for a loyalty ca
 
 <p align="center"><em>The card stack in light and dark mode. Screenshots use demo cards.</em></p>
 
+A full set of demo screens (wallet, card codes, adding a card, coupons, settings, Ukrainian) in both themes is in [docs/screenshots/demo](docs/screenshots/demo/).
+
 ## The experience
 
 - **Find the right card quickly.** Recognize stores in the overlapping stack, switch to tiles, or search by store or card name. Arrange cards by dragging or use the keyboard and card controls.
