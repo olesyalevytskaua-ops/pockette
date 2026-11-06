@@ -2,6 +2,8 @@
 
 **Loyalty cards and promo codes, ready at checkout.**
 
+**[▶ Open the app](https://olesyalevytskaua-ops.github.io/pockette/)** — runs in the browser; on a phone, add it to your home screen.
+
 Pockette is a mobile-first wallet for the moment you’re asked for a loyalty card. Scan a card once, find it by store name, and tap to show the barcode or QR code. Keep coupons in the same place, ready to copy. After the first visit, the installed web app can open offline.
 
 <p align="center">
@@ -38,6 +40,10 @@ Ivory, bordeaux, and champagne accents carry across both themes. Cormorant Garam
 **React · TypeScript · Vite · CSS · PWA**
 
 ZXing decodes images and camera frames on the device. bwip-js draws Code 128, EAN-13, EAN-8, UPC-A, Code 39, and QR codes. The service worker caches the app, fonts, and code tools for offline use. Cards and coupons are stored in the browser without an account or backend.
+
+## Live app
+
+Every push to `main` builds the app and publishes it to GitHub Pages at [olesyalevytskaua-ops.github.io/pockette](https://olesyalevytskaua-ops.github.io/pockette/) (see `.github/workflows/pages.yml`). Cards stay in each visitor’s own browser.
 
 ## Run locally
 
