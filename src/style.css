@@ -154,11 +154,28 @@ svg { flex-shrink: 0; }
   background:
     radial-gradient(80% 120% at 15% 0%, var(--card-sheen), transparent 60%),
     linear-gradient(155deg, var(--card-from) 0%, var(--card-mid) 48%, var(--card-to) 100%);
-  transition: transform .16s ease;
 }
-.store-card:hover { transform: translateY(-2px); }
-.store-card:active { transform: translateY(-2px); filter: brightness(.96); }
 .store-card:focus-visible { z-index: 5; }
+/* Touch feel (cardTouch.ts sets --tilt-*, --glare-* and the classes): pressed, the card sinks and
+   tilts toward the finger under a glare that follows it; released, it springs back as a glint
+   crosses the foil. ::before is the glare, ::after the glint. */
+.store-card { overflow: hidden; transition: transform .45s cubic-bezier(.34, 1.56, .64, 1), filter .2s ease; }
+.store-card::before, .store-card::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; }
+.store-card::before { background: radial-gradient(circle at var(--glare-x, 50%) var(--glare-y, 0%), rgba(255, 255, 255, .24), transparent 58%); opacity: 0; transition: opacity .25s ease; }
+.store-card::after { background: linear-gradient(105deg, transparent 32%, rgba(234, 217, 184, .45) 50%, transparent 68%); transform: translateX(-130%); }
+@media (hover: hover) {
+  button.store-card:hover { transform: perspective(900px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg)) translateY(-2px); }
+  button.store-card:hover::before { opacity: .6; }
+}
+.store-card.pressed { transform: perspective(900px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg)) scale(.965); filter: brightness(.97); transition-duration: .14s; }
+.store-card.pressed::before { opacity: 1; }
+.store-card.glint::after { animation: card-glint .75s cubic-bezier(.45, 0, .2, 1); }
+@keyframes card-glint { from { transform: translateX(-130%); } to { transform: translateX(130%); } }
+/* Opening a card: the sheet rises, its card head settles in and the same glint crosses it. */
+dialog[open] .card-head { animation: card-settle .5s cubic-bezier(.34, 1.4, .64, 1) both; }
+dialog[open] .card-head::after { animation: card-glint .9s cubic-bezier(.45, 0, .2, 1) .2s both; }
+@keyframes sheet-up { from { transform: translateY(48px); opacity: .4; } }
+@keyframes card-settle { from { opacity: 0; transform: translateY(16px) scale(.94); } }
 /* Dragging: no text selection or iOS callout on a held card; the lifted one rides above the rest. */
 .card-stack .store-card, .card-grid .store-card { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .card-stack li.lifted, .card-grid li.lifted { z-index: 20; }
@@ -263,6 +280,7 @@ dialog { color: var(--text); background: var(--surface); border: 1px solid var(-
 dialog::backdrop { background: var(--backdrop); backdrop-filter: blur(4px); }
 @media (max-width: 600px) {
   dialog { margin: auto 0 0; width: 100%; max-width: 100%; border-radius: var(--r-sheet) var(--r-sheet) 0 0; border-bottom: 0; padding-bottom: env(safe-area-inset-bottom); }
+  dialog[open] { animation: sheet-up .34s cubic-bezier(.2, .9, .3, 1); }
 }
 .sheet-body { padding: 0 var(--gutter) 24px; }
 .modal-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 16px 10px 8px var(--gutter); }
@@ -354,5 +372,5 @@ legend { font-size: 13px; font-weight: 600; margin-bottom: 10px; padding: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
-  .store-card:hover, .store-card:active { transform: none; }
+  .store-card:hover, .store-card.pressed { transform: none !important; }
 }

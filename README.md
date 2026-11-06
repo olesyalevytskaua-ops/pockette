@@ -9,6 +9,8 @@ Node.js 20.19+ or 22.12+.
 ```sh
 npm ci
 npm run dev       # http://localhost:5173
+npm run phone     # same, over HTTPS for a phone on your Wi-Fi: the camera needs a secure address.
+                  # Open the Network URL it prints and accept the self-signed certificate once.
 npm run build     # production build with offline service worker, in dist/
 npm run preview   # http://localhost:4173
 ```

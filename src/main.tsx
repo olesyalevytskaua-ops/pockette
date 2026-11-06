@@ -13,6 +13,7 @@ import { CODE_LIMIT, formats, isCodeFormat, validateCode, type CodeFormat, type 
 import { cardTone, presets } from './tone';
 import { useCardDrag } from './useCardDrag';
 import { Splash, shouldShowSplash } from './Splash';
+import { installCardTouch } from './cardTouch';
 import { dictionaries, I18n, LANG_KEY, useT, type Lang, type Strings } from './i18n';
 
 const CodeScanner = React.lazy(() => import('./CodeScanner'));
@@ -293,6 +294,8 @@ function App() {
   const [offline, setOffline] = useState(!navigator.onLine);
   const inputRef = useRef<HTMLInputElement>(null);
   const { cards, promos } = data;
+
+  useEffect(installCardTouch, []);
 
   useEffect(() => {
     applyTheme(appearance);
