@@ -5,14 +5,20 @@
 Pockette is a mobile-first wallet for the moment you’re asked for a loyalty card. Scan a card once, find it by store name, and tap to show the barcode or QR code. Keep coupons in the same place, ready to copy. After the first visit, the installed web app can open offline.
 
 <p align="center">
-  <img src="docs/screenshots/wallet-light.jpg" alt="Pockette in light mode, showing search, four overlapping demo cards, and the Add a card button" width="280">
-  &nbsp;
-  <img src="docs/screenshots/wallet-dark.jpg" alt="The same Pockette wallet in dark mode, with deep bordeaux accents and softly lit card edges" width="280">
+  <img src="docs/screenshots/demo/02-wallet-stack-light.png" alt="The card stack in light mode: search, five overlapping demo cards and the Add a card button" width="190">
+  <img src="docs/screenshots/demo/04-card-barcode-light.png" alt="An opened IKEA card showing its barcode and number" width="190">
+  <img src="docs/screenshots/demo/07-add-card-manual-light.png" alt="Adding a card by hand, with a live card preview and colour choices" width="190">
+  <img src="docs/screenshots/demo/08-coupons-light.png" alt="Coupons with promo codes, Copy buttons and an Expiring soon badge" width="190">
 </p>
 
-<p align="center"><em>The card stack in light and dark mode. Screenshots use demo cards.</em></p>
+<p align="center">
+  <img src="docs/screenshots/demo/02-wallet-stack-dark.png" alt="The card stack in dark mode, with bordeaux accents and softly lit card edges" width="190">
+  <img src="docs/screenshots/demo/04b-card-qr-dark.png" alt="An opened card showing its QR code in dark mode" width="190">
+  <img src="docs/screenshots/demo/03-wallet-tiles-dark.png" alt="The wallet as a grid of tiles in dark mode" width="190">
+  <img src="docs/screenshots/demo/09-settings-dark.png" alt="Settings for language, appearance, default layout and backup" width="190">
+</p>
 
-A full set of demo screens (wallet, card codes, adding a card, coupons, settings, Ukrainian) in both themes is in [docs/screenshots/demo](docs/screenshots/demo/).
+<p align="center"><em>Light and dark mode. Screenshots use demo cards. More screens, including the splash, search and Ukrainian, are in <a href="docs/screenshots/demo/">docs/screenshots/demo</a>.</em></p>
 
 ## The experience
 
