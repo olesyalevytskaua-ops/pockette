@@ -2,15 +2,25 @@
 
 **Loyalty cards and promo codes, ready at checkout.**
 
+**[▶ Open the app](https://olesyalevytskaua-ops.github.io/pockette/)** — runs in the browser; on a phone, add it to your home screen.
+
 Pockette is a mobile-first wallet for the moment you’re asked for a loyalty card. Scan a card once, find it by store name, and tap to show the barcode or QR code. Keep coupons in the same place, ready to copy. After the first visit, the installed web app can open offline.
 
 <p align="center">
-  <img src="docs/screenshots/wallet-light.jpg" alt="Pockette in light mode, showing search, four overlapping demo cards, and the Add a card button" width="280">
-  &nbsp;
-  <img src="docs/screenshots/wallet-dark.jpg" alt="The same Pockette wallet in dark mode, with deep bordeaux accents and softly lit card edges" width="280">
+  <img src="docs/screenshots/demo/02-wallet-stack-light.png" alt="The card stack in light mode: search, five overlapping demo cards and the Add a card button" width="190">
+  <img src="docs/screenshots/demo/04-card-barcode-light.png" alt="An opened IKEA card showing its barcode and number" width="190">
+  <img src="docs/screenshots/demo/07-add-card-manual-light.png" alt="Adding a card by hand, with a live card preview and colour choices" width="190">
+  <img src="docs/screenshots/demo/08-coupons-light.png" alt="Coupons with promo codes, Copy buttons and an Expiring soon badge" width="190">
 </p>
 
-<p align="center"><em>The card stack in light and dark mode. Screenshots use demo cards.</em></p>
+<p align="center">
+  <img src="docs/screenshots/demo/02-wallet-stack-dark.png" alt="The card stack in dark mode, with bordeaux accents and softly lit card edges" width="190">
+  <img src="docs/screenshots/demo/04b-card-qr-dark.png" alt="An opened card showing its QR code in dark mode" width="190">
+  <img src="docs/screenshots/demo/03-wallet-tiles-dark.png" alt="The wallet as a grid of tiles in dark mode" width="190">
+  <img src="docs/screenshots/demo/09-settings-dark.png" alt="Settings for language, appearance, default layout and backup" width="190">
+</p>
+
+<p align="center"><em>Light and dark mode. Screenshots use demo cards. More screens, including the splash, search and Ukrainian, are in <a href="docs/screenshots/demo/">docs/screenshots/demo</a>.</em></p>
 
 ## The experience
 
@@ -30,6 +40,10 @@ Ivory, bordeaux, and champagne accents carry across both themes. Cormorant Garam
 **React · TypeScript · Vite · CSS · PWA**
 
 ZXing decodes images and camera frames on the device. bwip-js draws Code 128, EAN-13, EAN-8, UPC-A, Code 39, and QR codes. The service worker caches the app, fonts, and code tools for offline use. Cards and coupons are stored in the browser without an account or backend.
+
+## Live app
+
+Every push to `main` builds the app and publishes it to GitHub Pages at [olesyalevytskaua-ops.github.io/pockette](https://olesyalevytskaua-ops.github.io/pockette/) (see `.github/workflows/pages.yml`). Cards stay in each visitor’s own browser.
 
 ## Run locally
 
