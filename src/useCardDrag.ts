@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
+import { haptic } from './haptics';
 
 /** Touch waits this long before a press becomes a drag, so taps open and swipes scroll. */
 const HOLD_MS = 350;
@@ -39,7 +40,7 @@ export function useCardDrag<T extends { id: string }>(items: T[], enabled: boole
     g.active = true;
     setDraft(items);
     setOffset({ id: g.id, dx: 0, dy: 0 });
-    navigator.vibrate?.(8);
+    haptic();
   }
 
   function end(commit: boolean) {
@@ -91,6 +92,7 @@ export function useCardDrag<T extends { id: string }>(items: T[], enabled: boole
         next.splice(to, 0, next.splice(from, 1)[0]);
         g.order = next;
         setDraft(next as T[]);
+        haptic();
       }
     }
     // Follow the pointer from wherever the item's slot sits now.
