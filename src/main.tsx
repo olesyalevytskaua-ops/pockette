@@ -14,6 +14,7 @@ import { cardTone, presets } from './tone';
 import { useCardDrag } from './useCardDrag';
 import { Splash, shouldShowSplash } from './Splash';
 import { installCardTouch } from './cardTouch';
+import { haptic } from './haptics';
 import { dictionaries, I18n, LANG_KEY, useT, type Lang, type Strings } from './i18n';
 
 const CodeScanner = React.lazy(() => import('./CodeScanner'));
@@ -216,6 +217,7 @@ function Editor({ card, onSave, onClose }: { card?: Card; onSave: (c: Card) => v
     setNumber(code.number);
     setFormat(code.format);
     setError('');
+    haptic('success');
     setScanNotice(t.scanned(formats[code.format]));
     returnFocus.current = store.trim() ? 'scan' : 'store';
     setShowForm(true);
@@ -325,14 +327,17 @@ function App() {
   }, [notice]);
 
   function chooseAppearance(next: Appearance) {
+    if (next !== appearance) haptic();
     setAppearance(next);
     writePref(THEME_KEY, next === 'system' ? null : next);
   }
   function chooseLang(next: Lang) {
+    if (next !== lang) haptic();
     setLang(next);
     writePref(LANG_KEY, next);
   }
   function chooseLayout(next: Layout) {
+    if (next !== layout) haptic();
     setLayout(next);
     writePref(LAYOUT_KEY, next);
     if (next === 'tile') dismissHint();
@@ -342,6 +347,7 @@ function App() {
     writePref(HINT_KEY, 'seen');
   }
   function go(next: Tab) {
+    if (next !== tab) haptic();
     setTab(next);
     setQuery('');
     window.scrollTo(0, 0);
@@ -353,10 +359,12 @@ function App() {
       localStorage.setItem(KEY, JSON.stringify(next));
       setData(next);
       setNotice(message);
+      haptic('success');
       return true;
     } catch {
       setStorageError('save');
       setNotice(t.saveError);
+      haptic('warning');
       return false;
     }
   }
@@ -367,8 +375,7 @@ function App() {
     if (from < 0 || to < 0 || to >= cards.length) return false;
     const next = [...cards];
     [next[from], next[to]] = [next[to], next[from]];
-    commit({ ...data, cards: next }, (by < 0 ? t.movedUp : t.movedDown)(cards[from].store));
-    return true;
+    return commit({ ...data, cards: next }, (by < 0 ? t.movedUp : t.movedDown)(cards[from].store));
   }
   /** Alt+arrow moves the focused card; React re-sorts the nodes, so focus is put back on it. */
   function moveByKey(e: React.KeyboardEvent, id: string) {
@@ -420,7 +427,7 @@ function App() {
   const filteredCards = cards.filter(c => `${c.store} ${c.label}`.toLowerCase().includes(normalized));
   const filteredPromos = promos.filter(p => `${p.store} ${p.code} ${p.offer}`.toLowerCase().includes(normalized));
   const drag = useCardDrag(filteredCards, !normalized, next => commit({ ...data, cards: next }, t.orderSaved));
-  const open = (card: Card) => { if (drag.swallowClick()) return; setSelected(card); setDeleting(false); };
+  const open = (card: Card) => { if (drag.swallowClick()) return; haptic(); setSelected(card); setDeleting(false); };
   const dragProps = (card: Card): DragProps => ({ ...drag.bind(card.id), onKeyDown: e => moveByKey(e, card.id), style: drag.dragStyle(card.id), dragging: drag.draggingId === card.id });
   const addCard = () => setEditor({});
   const addPromo = () => setPromoEditor({});
