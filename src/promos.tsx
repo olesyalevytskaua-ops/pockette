@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Check, Copy, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useT } from './i18n';
+import { haptic } from './haptics';
 
 export type Promo = { id: string; store: string; code: string; offer: string; expires: string };
 
@@ -76,6 +77,7 @@ export function PromoTicket({ promo, onEdit, onNotice }: {
         try {
           await navigator.clipboard.writeText(promo.code);
           setCopied(true);
+          haptic('success');
           onNotice(t.promoCopied);
         } catch { onNotice(t.copyUnavailable); }
       }}>{copied ? <Check size={16} aria-hidden="true" /> : <Copy size={16} aria-hidden="true" />}{copied ? t.copied : t.copy}</button>
